@@ -1,18 +1,14 @@
-import Footer from "../components/Footer";
-import Navbar from "../components/Navbar";
-import TopInfo from "../components/TopInfo";
-import OtpForm from "./components/OtpForm";
 import { Suspense } from "react";
+import Footer from "../components/Footer";
+import OtpForm from "./components/OtpForm";
 
 const OtpPage = () => {
   return (
     <>
-      <Suspense fallback={<div className="min-h-screen bg-[#f6f6f4]" />}>
-        <TopInfo />
-        <Navbar />
+      <Suspense fallback={<div>Loading...</div>}>
         <OtpForm />
-        <Footer />
       </Suspense>
+      <Footer />
     </>
   );
 };

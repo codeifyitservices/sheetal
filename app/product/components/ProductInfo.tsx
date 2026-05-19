@@ -439,13 +439,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
         <div className="mt-4 space-y-2">
           {[
             { icon: "delivery-truck.svg", text: "Get it by Tue, Jan 06" },
-            { icon: "cash-on-delivery.svg", text: "Pay on delivery available" },
+            {
+              icon: "cash-on-delivery.svg",
+              text: settings?.deliveryPoint2 || "Pay on delivery available",
+            },
             {
               icon: "product-return.svg",
-              text: "Easy 7 days return & exchange available",
+              text: settings?.deliveryPoint3 || "Easy 7 days return & exchange available",
             },
           ].map(({ icon, text }) => (
-            <div key={text} className="flex items-center text-[15px] gap-3">
+            <div key={icon} className="flex items-center text-[15px] gap-3">
               <Image
                 src={`/assets/icons/${icon}`}
                 width={38}

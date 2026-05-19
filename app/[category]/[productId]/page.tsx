@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { permanentRedirect, redirect } from "next/navigation";
 import Footer from "../../components/Footer";
-import StorefrontHeader from "../../components/StorefrontHeader";
 import ProductDetailClient from "../../product/components/ProductDetailClient";
 import { fetchProductBySlug } from "../../services/productService";
 import { getApiImageUrl } from "../../services/api";
@@ -169,7 +168,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <>
-      <StorefrontHeader />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

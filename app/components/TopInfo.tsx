@@ -1,22 +1,14 @@
 import Link from "next/link";
-import { API_BASE_URL } from "../services/api";
 import {
   isExternalHref,
   isTopInfoVisible,
-  defaultTopInfoConfig,
-  type HomepageSettings,
 } from "../services/homepageService";
-
-interface HomepageCoupon {
-  code: string;
-  description: string;
-  offerType: string;
-  offerValue: number;
-  couponType: string;
-  endDate?: string;
-  scope?: "All" | "Category" | "Specific_Product";
-  applicableIds?: Array<{ name?: string; slug?: string } | string>;
-}
+import {
+  defaultHomepageSettings,
+  getStorefrontHomepageCoupon,
+  getStorefrontHomepageSettings,
+  type HomepageCoupon,
+} from "./storefrontHeaderData";
 
 const defaultText = "Check back soon for fresh offers.";
 
@@ -77,48 +69,15 @@ const TopInfoLink = ({
   );
 };
 
-const defaultSettings: HomepageSettings = {
-  sections: {
-    topInfo: true,
-    homeBanner: true,
-    aboutSBS: true,
-    hiddenBeauty: true,
-    trendingThisWeek: true,
-    newArrivals: true,
-    collections: true,
-    timelessWomenCollection: true,
-    instagramDiaries: true,
-    testimonials: true,
-    blogs: true,
-    bookAppointmentWidget: true,
-  },
-  topInfoConfig: defaultTopInfoConfig,
-};
-
 async function getTopInfoData() {
   try {
-    const settingsResponse = await fetch(`${API_BASE_URL}/homepage/sections`, {
-      cache: "no-store",
-    });
-    const settingsJson = await settingsResponse.json();
-    const homepageSettings: HomepageSettings = {
-      sections: {
-        ...defaultSettings.sections,
-        ...(settingsJson?.sections || {}),
-      },
-      topInfoConfig: {
-        ...defaultSettings.topInfoConfig,
-        ...(settingsJson?.topInfoConfig || {}),
-      },
-    };
+    const homepageSettings = await getStorefrontHomepageSettings();
 
     const topInfoVisible = isTopInfoVisible(
       homepageSettings.sections,
       homepageSettings.topInfoConfig,
     );
     const topInfoMode = homepageSettings.topInfoConfig?.mode || "coupon";
-
-    console.log(`[TopInfo Debug] Visible: ${topInfoVisible}, Mode: ${topInfoMode}, SectionEnabled: ${homepageSettings.sections?.topInfo}`);
 
     if (!topInfoVisible) {
       return null;
@@ -129,22 +88,16 @@ async function getTopInfoData() {
     }
 
     try {
-      const couponResponse = await fetch(`${API_BASE_URL}/coupons/homepage`, {
-        cache: "no-store",
-      });
-      const couponJson = await couponResponse.json();
-      console.log(`[TopInfo Debug] Coupon Found: ${!!couponJson.data || !!couponJson.coupon}`);
       return {
         homepageSettings,
-        coupon: couponJson.data || couponJson.coupon || null,
+        coupon: await getStorefrontHomepageCoupon(),
       };
     } catch {
       return { homepageSettings, coupon: null };
     }
-  } catch (error: any) {
-    console.error("[TopInfo Debug] Error fetching data:", error.message);
+  } catch {
     return {
-      homepageSettings: defaultSettings,
+      homepageSettings: defaultHomepageSettings,
       coupon: null,
     };
   }

@@ -28,8 +28,13 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
 
   useEffect(() => {
-    setSelectedImage(initialImage);
-    setShowVideo(false);
+    if (initialImage.startsWith("video::")) {
+      setShowVideo(true);
+      setSelectedImage("");
+    } else {
+      setSelectedImage(initialImage);
+      setShowVideo(false);
+    }
     setZoomLevel(1);
   }, [initialImage, isOpen]);
 
@@ -64,11 +69,14 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on("select", onSelect);
-    const index = images.indexOf(selectedImage);
-    if (index !== -1 && emblaApi.selectedScrollSnap() !== index) {
-      emblaApi.scrollTo(index);
+    const target = showVideo ? videoUrl : selectedImage;
+    if (target) {
+      const index = media.indexOf(target);
+      if (index !== -1 && emblaApi.selectedScrollSnap() !== index) {
+        emblaApi.scrollTo(index);
+      }
     }
-  }, [emblaApi, onSelect, selectedImage, images]);
+  }, [emblaApi, onSelect, selectedImage, showVideo, media, videoUrl]);
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } =
@@ -93,7 +101,7 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 text-white bg-black rounded-full p-2"
+          className="absolute top-4 right-4 z-10 text-white bg-black rounded-full p-2 cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -116,7 +124,7 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
           {images.map((img, idx) => (
             <div
               key={idx}
-              className={`border cursor-pointer flex-shrink-0 ${selectedImage === img && !showVideo ? "border-blue-500" : "border-gray-200"}`}
+              className={`border cursor-pointer flex-shrink-0 ${selectedImage === img && !showVideo ? "border-[#bd9951]" : "border-gray-200 hover:border-gray-300"}`}
               onClick={() => {
                 setSelectedImage(img);
                 setShowVideo(false);
@@ -134,27 +142,38 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
           ))}
           {videoUrl && (
             <div
-              className={`border cursor-pointer flex items-center justify-center h-24 ${showVideo ? "border-blue-500" : "border-gray-200"}`}
+              className={`border cursor-pointer flex items-center justify-center h-24 flex-shrink-0 relative ${showVideo ? "border-[#bd9951]" : "border-gray-200 hover:border-gray-300"}`}
               onClick={() => {
                 setShowVideo(true);
                 setSelectedImage("");
                 setZoomLevel(1);
               }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-              >
-                <path d="m22 8-6 4 6 4V8Z" />
-                <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
-              </svg>
+              <Image
+                src={images[0] || "/assets/placeholder-product.jpg"}
+                alt="video-thumbnail"
+                width={160}
+                height={133}
+                className="w-full h-auto object-cover opacity-80"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <div className="bg-white/80 rounded-full p-1.5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="#bd9951"
+                  >
+                    <polygon points="5,3 19,12 5,21" />
+                  </svg>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Main Image */}
+        {/* Main Display */}
         <div
           className="flex-1 h-full relative overflow-hidden bg-gray-50"
           onMouseMove={handleMouseMove}
@@ -163,9 +182,10 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
             <video
               key={videoUrl}
               className="w-full h-full object-contain"
-              controls
               autoPlay
+              muted
               loop
+              playsInline
             >
               <source src={videoUrl} type="video/mp4" />
             </video>
@@ -193,7 +213,7 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
             <button
               onClick={() => handleZoom("out")}
               disabled={zoomLevel <= 1}
-              className="bg-black text-white rounded-full p-2 disabled:opacity-50"
+              className="bg-black text-white rounded-full p-2 disabled:opacity-50 cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -210,7 +230,7 @@ const ProductImageModal: React.FC<ProductImageModalProps> = ({
             <button
               onClick={() => handleZoom("in")}
               disabled={zoomLevel >= 3}
-              className="bg-black text-white rounded-full p-2 disabled:opacity-50"
+              className="bg-black text-white rounded-full p-2 disabled:opacity-50 cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

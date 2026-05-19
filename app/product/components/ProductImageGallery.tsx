@@ -12,7 +12,7 @@ import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 
 import ProductImageModal from "./ProductImageModal";
-import { ChevronDown, ChevronUp, Share, Share2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import ShareMenu from "../../components/ShareMenu";
 
 interface ProductImageGalleryProps {
@@ -34,6 +34,41 @@ const toVideoSlide = (url: string) => `${VIDEO_PREFIX}${url}`;
 const isVideoSlide = (src: string) => src.startsWith(VIDEO_PREFIX);
 const getVideoSrc = (src: string) => src.replace(VIDEO_PREFIX, "");
 
+interface VideoPlayerProps {
+  src: string;
+  type: string;
+  isActive: boolean;
+}
+
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, type, isActive }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isActive) {
+      video.play().catch((err) => {
+        console.log("Autoplay prevented:", err);
+      });
+    } else {
+      video.pause();
+    }
+  }, [isActive]);
+
+  return (
+    <video
+      ref={videoRef}
+      className="w-full h-full object-contain"
+      muted
+      loop
+      playsInline
+    >
+      <source src={src} type={type} />
+    </video>
+  );
+};
+
 const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   images,
   selectedImage,
@@ -53,9 +88,9 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   const [isZooming, setIsZooming] = useState(false);
   const [transformOrigin, setTransformOrigin] = useState("50% 50%");
 
-  // Full media list — video slide prepended if a video exists
+  // Full media list — video slide appended if a video exists
   const media = useMemo(
-    () => (videoUrl ? [toVideoSlide(videoUrl), ...images] : images),
+    () => (videoUrl ? [...images, toVideoSlide(videoUrl)] : images),
     [images, videoUrl],
   );
 
@@ -159,7 +194,28 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             className="flex flex-col gap-3 max-h-[400px] lg:max-h-[500px] overflow-y-auto scroll-smooth no-scrollbar"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {/* Video thumbnail — first in the list */}
+            {/* Image thumbnails */}
+            {images.map((img, idx) => (
+              <div
+                key={idx}
+                className={`border cursor-pointer transition-all flex-shrink-0 ${
+                  selectedImage === img && !isCurrentVideo
+                    ? "border-[#bd9951]"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+                onClick={() => onImageChange(img)}
+              >
+                <Image
+                  src={img || "/assets/placeholder-product.jpg"}
+                  alt={`thumb-${idx}`}
+                  width={100}
+                  height={133}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            ))}
+
+            {/* Video thumbnail — last in the list */}
             {videoUrl && (
               <div
                 className={`border cursor-pointer transition-all flex-shrink-0 relative ${
@@ -191,27 +247,6 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Image thumbnails */}
-            {images.map((img, idx) => (
-              <div
-                key={idx}
-                className={`border cursor-pointer transition-all flex-shrink-0 ${
-                  selectedImage === img && !isCurrentVideo
-                    ? "border-[#bd9951]"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() => onImageChange(img)}
-              >
-                <Image
-                  src={img || "/assets/placeholder-product.jpg"}
-                  alt={`thumb-${idx}`}
-                  width={100}
-                  height={133}
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            ))}
           </div>
 
           <button
@@ -235,20 +270,11 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
                     className="flex-[0_0_100%] min-w-0 relative aspect-[3/4]"
                   >
                     {isVideoSlide(item) ? (
-                      <video
-                        key={getVideoSrc(item)}
-                        className="w-full h-full object-contain"
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        controls
-                      >
-                        <source
-                          src={getVideoSrc(item)}
-                          type={resolvedVideoType}
-                        />
-                      </video>
+                      <VideoPlayer
+                        src={getVideoSrc(item)}
+                        type={resolvedVideoType}
+                        isActive={selectedImage === item}
+                      />
                     ) : (
                       <Image
                         src={item || "/assets/placeholder-product.jpg"}
@@ -293,20 +319,11 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             }}
           >
             {isCurrentVideo ? (
-              <video
-                key={getVideoSrc(selectedImage)}
-                className="w-full h-full object-contain"
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              >
-                <source
-                  src={getVideoSrc(selectedImage)}
-                  type={resolvedVideoType}
-                />
-              </video>
+              <VideoPlayer
+                src={getVideoSrc(selectedImage)}
+                type={resolvedVideoType}
+                isActive={isCurrentVideo}
+              />
             ) : (
               <div
                 className="w-full h-full"

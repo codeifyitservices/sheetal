@@ -1,6 +1,5 @@
-import TopInfo from "./components/TopInfo";
-import Navbar from "./components/Navbar";
 import HomeBanner from "./components/HomeBanner";
+import HomeBannerLoader from "./components/HomeBannerLoader";
 import AboutSBS from "./components/AboutSBS";
 import HiddenBeauty from "./components/HiddenBeauty";
 import { API_BASE_URL } from "./services/api";
@@ -13,7 +12,7 @@ async function getHomepageSections() {
     const res = await fetch(`${API_BASE_URL}/homepage/sections`, {
       cache: "no-store",
     });
-    const data = await res.json();``
+    const data = await res.json();
     return data.sections;
   } catch {
     // Return all visible as fallback
@@ -25,13 +24,13 @@ export default async function Home() {
   const s = await getHomepageSections();
   return (
     <>
-      <Suspense>
-        <TopInfo />
-        <Navbar />
+      <Suspense fallback={<HomeBannerLoader />}>
         {s?.homeBanner && <HomeBanner />}
+      </Suspense>
+      <Suspense>
         {s?.aboutSBS && <AboutSBS />}
         {s?.hiddenBeauty && <HiddenBeauty />}
-        <HomeDeferredSections sections={s} /> 
+        <HomeDeferredSections sections={s} />
         <Footer />
       </Suspense>
     </>

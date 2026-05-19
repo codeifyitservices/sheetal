@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isAuthenticated } from "../../services/authService";
 import { getCurrentUser } from "../../services/userService"; // Import getCurrentUser
@@ -18,6 +18,7 @@ interface CurrentUser {
 const UserDashboardLayout: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const initialPathRef = useRef(pathname);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true); // Add loading state
 
@@ -52,7 +53,7 @@ const UserDashboardLayout: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       if (!isAuthenticated()) {
-        redirectToLogin(router, pathname);
+        redirectToLogin(router, initialPathRef.current);
         return;
       }
 
@@ -64,18 +65,18 @@ const UserDashboardLayout: React.FC = () => {
         } else {
           // Handle error, maybe log out or show a message
           console.error("Failed to fetch user data:", res.message);
-          redirectToLogin(router, pathname); // Redirect to login on failure
+          redirectToLogin(router, initialPathRef.current); // Redirect to login on failure
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
-        redirectToLogin(router, pathname); // Redirect to login on error
+        redirectToLogin(router, initialPathRef.current); // Redirect to login on error
       } finally {
         setLoadingUser(false);
       }
     };
 
     fetchUserData();
-  }, [router, pathname]);
+  }, [router]);
 
   if (loadingUser) {
     // Show loading spinner while fetching user data

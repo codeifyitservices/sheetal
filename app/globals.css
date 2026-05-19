@@ -144,6 +144,33 @@
   }
 }
 
+  .policy-content, .policy-account-content {
+    font-family: var(--font-montserrat), sans-serif !important;
+  }
+
+  .policy-content h1, .policy-account-content h1 {
+    font-family: var(--font-optima), serif !important;
+    @apply text-2xl font-bold mb-4 mt-8 text-[#6a3f07] leading-tight;
+  }
+
+  .policy-content h2, .policy-account-content h2 {
+    font-family: var(--font-optima), serif !important;
+    @apply text-xl font-bold mb-3 mt-6 text-[#6a3f07] leading-tight;
+  }
+
+  .policy-content h3, .policy-account-content h3 {
+    font-family: var(--font-optima), serif !important;
+    @apply text-lg font-bold mb-2 mt-4 text-[#6a3f07] leading-tight;
+  }
+
+  .policy-content a, .policy-account-content a {
+    @apply text-[#bd9951] underline hover:text-[#6a3f07] transition-colors;
+  }
+
+  .policy-content blockquote, .policy-account-content blockquote {
+    @apply border-l-4 border-[#bd9951] pl-4 py-1 italic my-6 text-gray-700 bg-gray-50 rounded-r;
+  }
+
 @layer utilities {
   .animate-slide-left {
     animation: slide-left 0.35s ease forwards;

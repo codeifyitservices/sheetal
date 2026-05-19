@@ -1,9 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Suspense } from "react";
-
-import TopInfo from "../components/TopInfo";
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getBlogs, type Blog } from "@/app/services/blogService";
 import { getApiImageUrl } from "@/app/services/api";
@@ -27,15 +23,6 @@ const BlogsPage = async ({ searchParams }: BlogsPageProps) => {
 
   return (
     <div className="font-[family-name:var(--font-montserrat)] bg-white">
-      <Suspense fallback={
-        <>
-          <div className="h-[27px] w-full bg-[#f3bf43]" />
-          <div className="fixed left-0 right-0 top-0 z-[1003] h-20 bg-[#082722]/95 backdrop-blur-sm" />
-        </>
-      }>
-        <TopInfo />
-        <Navbar />
-      </Suspense>
       <div className="relative w-full h-[300px] md:h-[400px] mt-[40px] md:mt-[75px] overflow-hidden">
         <Image
           src="/assets/690995222.jpg"

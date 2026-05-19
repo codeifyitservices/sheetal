@@ -12,6 +12,7 @@ import { isAuthenticated } from "@/app/services/authService";
 import { redirectToLogin } from "@/app/utils/authRedirect";
 import { buildProductHref } from "@/app/utils/productRoutes";
 import type { CartItem } from "@/app/hooks/useCart";
+import HideStorefrontHeader from "@/app/components/HideStorefrontHeader";
 
 const SharedCartPage = () => {
   const router = useRouter();
@@ -132,6 +133,7 @@ const SharedCartPage = () => {
 
   return (
     <div className="font-montserrat bg-white min-h-screen">
+      <HideStorefrontHeader />
       <div className="w-full">
         <div className="flex justify-between items-center py-8 px-6 md:px-10">
           <div className="flex items-center">

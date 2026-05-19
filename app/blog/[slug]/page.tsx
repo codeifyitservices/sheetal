@@ -1,9 +1,6 @@
 import React from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import TopInfo from "../../components/TopInfo";
-import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import BlogBanner from "../components/BlogBanner";
 import BlogContent from "../components/BlogContent";
@@ -105,15 +102,6 @@ const BlogDetail = async ({ params }: PageProps) => {
 
    return (
      <div className="font-[family-name:var(--font-montserrat)] bg-white">
-       <Suspense fallback={
-         <>
-           <div className="h-[27px] w-full bg-[#f3bf43]" />
-           <div className="fixed left-0 right-0 top-0 z-[1003] h-20 bg-[#082722]/95 backdrop-blur-sm" />
-         </>
-       }>
-         <TopInfo />
-         <Navbar />
-       </Suspense>
        <BlogBanner title={blog.title} image={getBlogImageUrl(blog)} />
 
       <div className="container mx-auto px-4 py-16">

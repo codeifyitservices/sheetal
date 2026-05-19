@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getOrderById } from "../../services/orderService";
 import { getBasicInfo } from "../../services/basicInfoService";
 import { getSettings } from "../../services/settingsService";
+import HideStorefrontHeader from "../../components/HideStorefrontHeader";
 
 type OrderStatus =
   | "Processing"
@@ -22,6 +23,10 @@ interface OrderItem {
     _id: string;
     name: string;
     gstPercent?: number;
+    category?: {
+      name?: string;
+      hsnCode?: string;
+    } | null;
   } | null;
   name: string;
   image: string;
@@ -126,6 +131,7 @@ const InvoicePageInner = () => {
     billingAddress: emptyAddress,
   });
   const [globalTax, setGlobalTax] = useState(0);
+  const [globalHsnCode, setGlobalHsnCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [orderId, setOrderId] = useState(
@@ -186,6 +192,7 @@ const InvoicePageInner = () => {
 
         if (settingsRes.status === "fulfilled") {
           setGlobalTax(settingsRes.value.taxPercentage || 0);
+          setGlobalHsnCode(settingsRes.value.globalHsnCode || "");
         }
       } catch {
         setError("Unable to load this invoice right now.");
@@ -251,6 +258,7 @@ const InvoicePageInner = () => {
 
   return (
     <>
+      <HideStorefrontHeader />
       <style>{`
         * { font-family: var(--font-montserrat), sans-serif; }
         @media print { .no-print { display: none !important; } }
@@ -344,11 +352,11 @@ const InvoicePageInner = () => {
                             <div className="overflow-x-auto">
                               <table className="w-full border-collapse bg-white">
                                 <colgroup>
-                                  <col className="w-[30%]" />
+                                  <col className="w-[35%]" />
+                                  <col className="w-[15%]" />
+                                  <col className="w-[15%]" />
                                   <col className="w-[12%]" />
-                                  <col className="w-[10%]" />
-                                  <col className="w-[12%]" />
-                                  <col className="w-[10%]" />
+                                  <col className="w-[8%]" />
                                   <col className="w-[15%]" />
                                 </colgroup>
                                 <thead>
@@ -357,13 +365,13 @@ const InvoicePageInner = () => {
                                       Product List
                                     </th>
                                     <th className="border border-[#ccc] p-[13px] text-left text-[14px] text-[#111111] font-semibold">
-                                      Selling Price
+                                      HSN
+                                    </th>
+                                    <th className="border border-[#ccc] p-[13px] text-left text-[14px] text-[#111111] font-semibold">
+                                      Price
                                     </th>
                                     <th className="border border-[#ccc] p-[13px] text-left text-[14px] text-[#111111] font-semibold">
                                       GST Rate
-                                    </th>
-                                    <th className="border border-[#ccc] p-[13px] text-left text-[14px] text-[#111111] font-semibold">
-                                      GST Amount
                                     </th>
                                     <th className="border border-[#ccc] p-[13px] text-left text-[14px] text-[#111111] font-semibold">
                                       Qty
@@ -375,16 +383,13 @@ const InvoicePageInner = () => {
                                 </thead>
                                 <tbody>
                                   {order.orderItems.map((item) => {
+                                    const hsn = item.product?.category?.hsnCode || globalHsnCode || "—";
                                     const gstRate =
                                       item.gstPercent ||
                                       item.product?.gstPercent ||
                                       globalTax ||
                                       0;
-                                    const baseAmount =
-                                      item.price * item.quantity;
-                                    const gstAmount =
-                                      (baseAmount * gstRate) / 100;
-                                    const totalAmount = baseAmount + gstAmount;
+                                    const totalAmount = item.price * item.quantity;
 
                                     return (
                                       <tr key={item._id}>
@@ -418,13 +423,13 @@ const InvoicePageInner = () => {
                                           </div>
                                         </td>
                                         <td className="border border-[#ccc] p-[13px] text-[14px] text-[#111111]">
+                                          {hsn}
+                                        </td>
+                                        <td className="border border-[#ccc] p-[13px] text-[14px] text-[#111111]">
                                           {money(item.price)}
                                         </td>
                                         <td className="border border-[#ccc] p-[13px] text-[14px] text-[#111111]">
                                           {gstRate}%
-                                        </td>
-                                        <td className="border border-[#ccc] p-[13px] text-[14px] text-[#111111]">
-                                          {money(gstAmount)}
                                         </td>
                                         <td className="border border-[#ccc] p-[13px] text-[14px] text-[#111111]">
                                           {item.quantity}
@@ -510,7 +515,7 @@ const InvoicePageInner = () => {
                                         </strong>
                                       </p>
                                     </td>
-                                    <td className="border-y border-[#ccc] text-[16px] text-left text-[#111111]">
+                                    <td className="border-y border-ccc text-[16px] text-left text-[#111111]">
                                       <p className="text-[#111111] font-bold text-[16px] my-4 text-left">
                                         <strong className="text-[#111111]">
                                           {money(order.totalPrice)}

@@ -22,6 +22,7 @@ import { peekRedirectField, redirectToLogin } from "../../utils/authRedirect";
 import { getUserDetails, isAuthenticated } from "../../services/authService";
 import { hasRedeemedCoupon, isSingleUseCoupon, markCouponRedeemed } from "../../utils/couponRedemption";
 import type { CartItem } from "../../hooks/useCart";
+import HideStorefrontHeader from "../../components/HideStorefrontHeader";
 
 // ── Inner component that uses useSearchParams ─────────────────────────────
 const AddressPageInner = () => {
@@ -609,7 +610,7 @@ const AddressPageInner = () => {
         orderItems,
         normalizedEmail,
         {
-          itemsPrice: itemsAmountAfterCoupon,
+          itemsPrice: activeFinalAmount,
           shippingPrice: shippingCharges,
           taxPrice: platformFee,
           totalPrice: totalAmount,
@@ -678,6 +679,7 @@ const AddressPageInner = () => {
 
   return (
     <div className="font-montserrat">
+      <HideStorefrontHeader />
       {/* Header */}
       <div className="w-full border py-5 border-gray-100">
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center py-3 px-4 sm:px-6 md:px-10">
