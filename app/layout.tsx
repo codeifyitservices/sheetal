@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { Montserrat, Outfit, Cinzel } from "next/font/google";
 import localFont from "next/font/local";
 import { Toaster } from "react-hot-toast";
+import StorefrontHeader from "./components/StorefrontHeader";
 import "./globals.css";
 
 const optima = localFont({
@@ -86,6 +87,9 @@ export default function RootLayout({
           reverseOrder={false}
           containerStyle={{ zIndex: 999999 }}
         />
+        <div className="storefront-header">
+          <StorefrontHeader />
+        </div>
         {children}
       </body>
     </html>

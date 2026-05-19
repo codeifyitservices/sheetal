@@ -54,3 +54,14 @@ export const buildProductHref = (
   const search = new URLSearchParams({ scroll: options.scroll });
   return `${pathname}?${search.toString()}`;
 };
+
+export const buildProductReviewsHref = (
+  product: ProductLike | null | undefined,
+): string => {
+  const productHref = buildProductHref(product);
+  if (productHref === "/product-list") {
+    return productHref;
+  }
+
+  return `${productHref.replace(/\?.*$/, "")}/reviews`;
+};

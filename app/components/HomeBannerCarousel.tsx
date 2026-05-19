@@ -36,6 +36,21 @@ const hasDesktopImage = (banner: BannerItem): banner is BannerWithDesktopImage =
 const hasMobileImage = (banner: BannerItem): banner is BannerWithMobileImage =>
   Boolean(banner.image?.mobile);
 
+const resolveBannerHref = (href?: string) => {
+  const trimmedHref = href?.trim();
+  if (!trimmedHref) return "#";
+
+  const legacyCategoryMatch = trimmedHref.match(
+    /^\/product-list\?category=([^&#]+)$/i,
+  );
+  if (!legacyCategoryMatch) {
+    return trimmedHref;
+  }
+
+  const categorySlug = decodeURIComponent(legacyCategoryMatch[1] || "").trim();
+  return categorySlug ? `/${encodeURIComponent(categorySlug)}` : "/product-list";
+};
+
 const ArrowIcon = ({ src, alt }: { src: string; alt: string }) => (
   <Image src={src} alt={alt} width={48} height={48} className="h-12 w-12" />
 );
@@ -94,7 +109,7 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
           >
             {resolvedDesktopBanners.map((banner, index) => (
               <div key={banner._id} className="banner-carousel-item min-w-full outline-none">
-                <Link href={banner.link || "#"}>
+                <Link href={resolveBannerHref(banner.link)}>
                   <div className="relative aspect-[8/3] min-h-[640px] w-full bg-[#e9e0d1]">
                     <Image
                       src={getApiImageUrl(
@@ -152,7 +167,7 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
           >
             {resolvedMobileBanners.map((banner, index) => (
               <div key={banner._id} className="banner-carousel-item min-w-full outline-none">
-                <Link href={banner.link || "#"}>
+                <Link href={resolveBannerHref(banner.link)}>
                   <div className="relative min-h-[100svh] w-full bg-[#e9e0d1]">
                     <Image
                       src={getApiImageUrl(

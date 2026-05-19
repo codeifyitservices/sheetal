@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StarRating from "./StarRating";
 import { checkCanReview, addReview, fetchProductReviews } from "../../services/productService";
@@ -28,6 +29,11 @@ interface ProductReviewsProps {
   initialReviews: Review[];
   overallRating: number;
   totalReviews: number;
+  limit?: number;
+  viewAllHref?: string;
+  showFilters?: boolean;
+  compactHeader?: boolean;
+  stackedList?: boolean;
 }
 
 const ProductReviews: React.FC<ProductReviewsProps> = ({
@@ -35,6 +41,11 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
   initialReviews,
   overallRating,
   totalReviews: initialTotal,
+  limit,
+  viewAllHref,
+  showFilters = false,
+  compactHeader = false,
+  stackedList = false,
 }) => {
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [totalReviews, setTotalReviews] = useState(initialTotal);
@@ -45,7 +56,38 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
   const [canReview, setCanReview] = useState(false);
   const [reviewReason, setReviewReason] = useState<string | null>(null);
   const [loadingCanReview, setLoadingCanReview] = useState(true);
+  const [reviewFilter, setReviewFilter] = useState<"all" | "good" | "bad">("all");
   const router = useRouter();
+
+  const sortedReviews = useMemo(() => {
+    return [...reviews].sort((a, b) => {
+      if (b.rating !== a.rating) {
+        return b.rating - a.rating;
+      }
+
+      const firstDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const secondDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return secondDate - firstDate;
+    });
+  }, [reviews]);
+
+  const visibleReviews = useMemo(() => {
+    const filteredReviews = sortedReviews.filter((review) => {
+      if (reviewFilter === "good") {
+        return review.rating >= 3;
+      }
+
+      if (reviewFilter === "bad") {
+        return review.rating <= 2;
+      }
+
+      return true;
+    });
+
+    return typeof limit === "number"
+      ? filteredReviews.slice(0, limit)
+      : filteredReviews;
+  }, [limit, reviewFilter, sortedReviews]);
 
   // Check eligibility on mount if logged in
   useEffect(() => {
@@ -117,24 +159,47 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
 
   return (
     <section className="max-w-6xl mx-auto px-4 py-5">
-      {/* Heading */}
-      <h3 className="text-center text-[26px] text-[#a2690f] mb-6 font-[family-name:var(--font-optima)]">
-        Customer Reviews
-      </h3>
+      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <h3
+          className={`text-[26px] text-[#a2690f] font-[family-name:var(--font-optima)] ${
+            compactHeader ? "text-left" : "text-center md:text-left"
+          }`}
+        >
+          Customer Reviews
+        </h3>
+        {viewAllHref ? (
+          <Link
+            href={viewAllHref}
+            className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a2690f] hover:text-[#7d4e07] transition-colors"
+          >
+            View All Reviews
+          </Link>
+        ) : null}
+      </div>
       <div className="border-t border-gray-300 mb-10" />
 
       {/* Summary Row */}
-      <div className="flex flex-col md:flex-row items-center justify-center md:space-x-32 gap-6 mb-12">
+      <div
+        className={`flex flex-col gap-6 mb-12 ${
+          compactHeader
+            ? "md:flex-row md:items-start md:justify-between"
+            : "md:flex-row md:items-center md:justify-center md:space-x-32"
+        }`}
+      >
         {/* Rating Summary */}
-        <div className="flex flex-col items-center md:border-r md:px-20 border-gray-300">
+        <div
+          className={`flex flex-col ${
+            compactHeader ? "items-start" : "items-center"
+          } md:border-r border-gray-300 ${compactHeader ? "md:pr-10" : "md:px-20"}`}
+        >
           <StarRating rating={Math.round(overallRating)} />
           <p className="text-lg mt-2">Based on {totalReviews} Reviews</p>
         </div>
 
         {/* Write Review Area */}
-        <div className="md:w-auto overflow-hidden">
+        <div className={`overflow-hidden ${compactHeader ? "md:flex-1" : "md:w-auto"}`}>
           {!showForm ? (
-            <div className="text-center">
+            <div className={compactHeader ? "text-left" : "text-center"}>
               {loadingCanReview ? (
                 <div className="h-12 w-40 bg-gray-100 animate-pulse" />
               ) : canReview ? (
@@ -212,10 +277,35 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
 
       <div className="border-t border-gray-300 mb-12" />
 
+      {showFilters ? (
+        <div className="mb-8 flex flex-wrap gap-3">
+          {[
+            { key: "all", label: "All" },
+            { key: "good", label: "Good Reviews" },
+            { key: "bad", label: "Bad Reviews" },
+          ].map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              onClick={() =>
+                setReviewFilter(filter.key as "all" | "good" | "bad")
+              }
+              className={`rounded-full border px-5 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                reviewFilter === filter.key
+                  ? "border-[#a2690f] bg-[#a2690f] text-white"
+                  : "border-gray-300 text-gray-700 hover:border-[#a2690f] hover:text-[#a2690f]"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {/* Reviews Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {reviews.length > 0 ? (
-          reviews.map((review) => {
+      <div className={stackedList ? "space-y-8" : "grid grid-cols-1 md:grid-cols-2 gap-12"}>
+        {visibleReviews.length > 0 ? (
+          visibleReviews.map((review) => {
             const userName = review.userName || (typeof review.user === "object" ? review.user.name : "Customer");
             const userInitial = userName.charAt(0);
 
@@ -248,8 +338,10 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
             );
           })
         ) : (
-          <p className="text-gray-500 text-center col-span-2 py-10">
-            No reviews yet. Be the first to review this product!
+          <p className={`text-gray-500 text-center py-10 ${stackedList ? "" : "col-span-2"}`}>
+            {reviews.length > 0
+              ? "No reviews match the selected filter."
+              : "No reviews yet. Be the first to review this product!"}
           </p>
         )}
       </div>

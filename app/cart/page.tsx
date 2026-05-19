@@ -12,6 +12,7 @@ import { isAuthenticated } from "../services/authService";
 import { peekRedirectField, redirectToLogin } from "../utils/authRedirect";
 import { createSharedCart } from "../services/cartService";
 import Footer from "../components/Footer";
+import HideStorefrontHeader from "../components/HideStorefrontHeader";
 
 const readSharedCartToken = (): string => {
   if (typeof window === "undefined") return "";
@@ -297,6 +298,7 @@ const CartPage = () => {
 
   return (
     <div className="font-montserrat">
+      <HideStorefrontHeader />
       {/* Header */}
       <div className="w-full">
         <div className="flex justify-between items-center py-8 px-6 md:px-10">

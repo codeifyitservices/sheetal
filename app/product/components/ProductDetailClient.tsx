@@ -34,6 +34,7 @@ import { useWishlist } from "../../hooks/useWishlist";
 import { useCart } from "../../hooks/useCart";
 import { redirectToLogin } from "../../utils/authRedirect";
 import { ORDER_CONFIRMED_EVENT } from "../../hooks/shopEvents";
+import { buildProductReviewsHref } from "../../utils/productRoutes";
 import toast from "react-hot-toast";
 import useSWR from "swr";
 import { getSettings } from "../../services/settingsService";
@@ -508,6 +509,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
 
   useEffect(() => {
     if (!galleryImages.length) return;
+    if (selectedImage && selectedImage.startsWith("video::")) return;
     if (!selectedImage || !galleryImages.includes(selectedImage)) {
       setSelectedImage(galleryImages[0]);
     }
@@ -806,6 +808,8 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         initialReviews={reviews}
         overallRating={product.averageRating || 0}
         totalReviews={product.totalReviews || 0}
+        limit={5}
+        viewAllHref={buildProductReviewsHref(product)}
       />
 
       <RelatedProducts

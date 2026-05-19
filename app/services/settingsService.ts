@@ -20,6 +20,9 @@ interface Settings {
   returnPolicyContent: string;
   supportEmail: string;
   supportWhatsapp: string;
+  globalHsnCode?: string;
+  deliveryPoint2?: string;
+  deliveryPoint3?: string;
 }
 
 export const getSettings = async (): Promise<Settings> => {
@@ -39,5 +42,7 @@ export const getSettings = async (): Promise<Settings> => {
     returnPolicyContent: "Your satisfaction is our top priority. If you're not completely satisfied with the product, we offer a hassle-free, no questions asked 7 days return and refund.",
     supportEmail: "info@studiobysheetal.com",
     supportWhatsapp: "919958813913",
+    deliveryPoint2: "Pay on delivery available",
+    deliveryPoint3: "Easy 7 days return & exchange available",
   };
 };

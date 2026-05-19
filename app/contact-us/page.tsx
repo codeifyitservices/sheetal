@@ -1,25 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Mail, Phone } from "lucide-react";
-import { Suspense } from "react";
 
 import Footer from "../components/Footer";
-import Navbar from "../components/Navbar";
-import TopInfo from "../components/TopInfo";
 import ContactUsForm from "./ContactUsForm";
 
 const ContactUs = () => {
   return (
     <>
-      <Suspense fallback={
-        <>
-          <div className="h-[27px] w-full bg-[#f3bf43]" />
-          <div className="fixed left-0 right-0 top-0 z-[1003] h-20 bg-[#082722]/95 backdrop-blur-sm" />
-        </>
-      }>
-        <TopInfo />
-        <Navbar />
-      </Suspense>
       <div className="container-fluid p-0 relative overflow-hidden md:mt-[75px] mb-5 text-center">
         <div className="relative">
           <div className="w-full">

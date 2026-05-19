@@ -25,6 +25,7 @@ import {
 } from "../services/authService";
 import {
   CART_UPDATED_EVENT,
+  dispatchCartItemAdded,
   dispatchCartUpdated,
   dispatchWishlistUpdated,
 } from "./shopEvents";
@@ -462,9 +463,11 @@ export const useCart = (): UseCartReturn => {
             productId, variantId, quantity, size, price, discountPrice, color, variantImage,
           );
           if (response.success) {
-            toast.success(response.message || "Product added to cart!");
             await loadCart(false);
             dispatchCartUpdated();
+            dispatchCartItemAdded({
+              productName: productMeta?.name,
+            });
           } else {
             toast.error(response.message || "Failed to add to cart.");
           }
@@ -503,7 +506,9 @@ export const useCart = (): UseCartReturn => {
           writeGuestCart(guestItems);
           setCart(commitCartSnapshot(guestToCartItems(guestItems)));
           dispatchCartUpdated();
-          toast.success("Added to cart!");
+          dispatchCartItemAdded({
+            productName: productMeta?.name,
+          });
         }
       } catch (error: unknown) {
         console.error("Error adding to cart:", error);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import UserInfoCard from "./components/UserInfoCard";
 import DashboardSidebar from "./components/DashboardSidebar";
@@ -18,6 +18,7 @@ interface CurrentUser {
 const MyAccountLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const initialPathRef = useRef(pathname);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -40,7 +41,7 @@ const MyAccountLayout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       if (!isAuthenticated()) {
-        redirectToLogin(router, pathname);
+        redirectToLogin(router, initialPathRef.current);
         return;
       }
 
@@ -51,18 +52,18 @@ const MyAccountLayout = ({ children }: { children: React.ReactNode }) => {
           setCurrentUser(res.data);
         } else {
           console.error("Failed to fetch user data:", res.message);
-          redirectToLogin(router, pathname);
+          redirectToLogin(router, initialPathRef.current);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
-        redirectToLogin(router, pathname);
+        redirectToLogin(router, initialPathRef.current);
       } finally {
         setLoadingUser(false);
       }
     };
 
     fetchUserData();
-  }, [router, pathname]);
+  }, [router]);
 
   // Handle navigation from UserInfoCard
   const onSelectSection = (section: string) => {

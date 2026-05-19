@@ -28,7 +28,9 @@ import {
 import { fetchCart } from "../services/cartService";
 import { buildProductHref } from "../utils/productRoutes";
 import {
+  CART_ITEM_ADDED_EVENT,
   CART_UPDATED_EVENT,
+  CartItemAddedDetail,
   WISHLIST_UPDATED_EVENT,
 } from "../hooks/shopEvents";
 
@@ -741,6 +743,9 @@ const NavbarInner = ({
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [showCartPopup, setShowCartPopup] = useState(false);
+  const [cartPopupProductName, setCartPopupProductName] = useState("");
+  const [isCartPopupHovered, setIsCartPopupHovered] = useState(false);
   const [navbarBottom, setNavbarBottom] = useState(0);
   const [desktopVisibleItems, setDesktopVisibleItems] = useState<NavbarNavItem[]>(
     () => initialNavItems,
@@ -751,6 +756,9 @@ const NavbarInner = ({
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const desktopNavRef = useRef<HTMLDivElement | null>(null);
+  const cartPopupTimeoutRef = useRef<number | null>(null);
+  const cartPopupExpireAtRef = useRef<number | null>(null);
+  const cartPopupRemainingMsRef = useRef(5000);
   const itemMeasureRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const moreMeasureRef = useRef<HTMLLIElement | null>(null);
   const navItems = useMemo(() => initialNavItems, [initialNavItems]);
@@ -824,16 +832,44 @@ const NavbarInner = ({
   }, [pathname, syncNavCounts]);
 
   useEffect(() => {
+    const scheduleCartPopupClose = (delay: number) => {
+      if (cartPopupTimeoutRef.current) {
+        window.clearTimeout(cartPopupTimeoutRef.current);
+      }
+
+      cartPopupRemainingMsRef.current = delay;
+      cartPopupExpireAtRef.current = Date.now() + delay;
+      cartPopupTimeoutRef.current = window.setTimeout(() => {
+        setShowCartPopup(false);
+        cartPopupTimeoutRef.current = null;
+        cartPopupExpireAtRef.current = null;
+      }, delay);
+    };
+
     const handleShopStateUpdate = () => {
       void syncNavCounts();
     };
 
+    const handleCartItemAdded = (event: Event) => {
+      const customEvent = event as CustomEvent<CartItemAddedDetail>;
+      setCartPopupProductName(customEvent.detail?.productName || "");
+      setIsCartPopupHovered(false);
+      setShowCartPopup(true);
+      scheduleCartPopupClose(5000);
+    };
+
     window.addEventListener(CART_UPDATED_EVENT, handleShopStateUpdate);
     window.addEventListener(WISHLIST_UPDATED_EVENT, handleShopStateUpdate);
+    window.addEventListener(CART_ITEM_ADDED_EVENT, handleCartItemAdded);
 
     return () => {
       window.removeEventListener(CART_UPDATED_EVENT, handleShopStateUpdate);
       window.removeEventListener(WISHLIST_UPDATED_EVENT, handleShopStateUpdate);
+      window.removeEventListener(CART_ITEM_ADDED_EVENT, handleCartItemAdded);
+      if (cartPopupTimeoutRef.current) {
+        window.clearTimeout(cartPopupTimeoutRef.current);
+      }
+      cartPopupExpireAtRef.current = null;
     };
   }, [syncNavCounts]);
 
@@ -948,6 +984,43 @@ const NavbarInner = ({
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const toggleSearch = () => setSearchOpen(!searchOpen);
   const closeSearch = () => setSearchOpen(false);
+  const handleCartPopupMouseEnter = () => {
+    setIsCartPopupHovered(true);
+    if (cartPopupTimeoutRef.current) {
+      window.clearTimeout(cartPopupTimeoutRef.current);
+      cartPopupTimeoutRef.current = null;
+    }
+
+    if (cartPopupExpireAtRef.current) {
+      cartPopupRemainingMsRef.current = Math.max(
+        0,
+        cartPopupExpireAtRef.current - Date.now(),
+      );
+      cartPopupExpireAtRef.current = null;
+    }
+  };
+  const handleCartPopupMouseLeave = () => {
+    setIsCartPopupHovered(false);
+
+    const nextDelay = Math.max(cartPopupRemainingMsRef.current, 250);
+    cartPopupRemainingMsRef.current = nextDelay;
+    cartPopupExpireAtRef.current = Date.now() + nextDelay;
+    cartPopupTimeoutRef.current = window.setTimeout(() => {
+      setShowCartPopup(false);
+      cartPopupTimeoutRef.current = null;
+      cartPopupExpireAtRef.current = null;
+    }, nextDelay);
+  };
+  const closeCartPopup = () => {
+    setShowCartPopup(false);
+    setIsCartPopupHovered(false);
+    if (cartPopupTimeoutRef.current) {
+      window.clearTimeout(cartPopupTimeoutRef.current);
+      cartPopupTimeoutRef.current = null;
+    }
+    cartPopupExpireAtRef.current = null;
+    cartPopupRemainingMsRef.current = 5000;
+  };
 
   const getDisplayName = () => {
     if (!currentUser) return "Guest";
@@ -1023,14 +1096,50 @@ const NavbarInner = ({
                   </span>
                 )}
               </Link>
-              <Link href="/cart" className="relative hover:opacity-80 transition-opacity">
-                <Image src="/assets/icons/shopping-bag.png" alt="Cart" width={24} height={24} className="w-7 h-7" />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
-                    {cartItemCount}
-                  </span>
-                )}
-              </Link>
+              <div className="relative">
+                <Link href="/cart" className="relative hover:opacity-80 transition-opacity">
+                  <Image src="/assets/icons/shopping-bag.png" alt="Cart" width={24} height={24} className="w-7 h-7" />
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                      {cartItemCount}
+                    </span>
+                  )}
+                </Link>
+                {showCartPopup ? (
+                  <div
+                    className="absolute right-0 top-[calc(100%+12px)] z-[1100] w-[290px]"
+                    onMouseEnter={handleCartPopupMouseEnter}
+                    onMouseLeave={handleCartPopupMouseLeave}
+                  >
+                    <div className="absolute right-4 -top-2 h-4 w-4 rotate-45 border-l border-t border-[#e7d9a7] bg-[#153427]" />
+                    <div className="relative rounded-xl border border-[#e7d9a7] bg-[#153427] p-4 pr-10 text-[#f5de7e] shadow-2xl">
+                      <button
+                        type="button"
+                        onClick={closeCartPopup}
+                        className="absolute right-3 top-3 text-sm text-[#f5de7e] hover:text-white transition-colors cursor-pointer"
+                        aria-label="Close cart popup"
+                      >
+                        x
+                      </button>
+                      <p className="text-sm font-medium leading-5">
+                        Product added to cart
+                      </p>
+                      {cartPopupProductName ? (
+                        <p className="mt-1 line-clamp-1 text-xs text-[#f3e8be]">
+                          {cartPopupProductName}
+                        </p>
+                      ) : null}
+                      <Link
+                        href="/cart"
+                        onClick={closeCartPopup}
+                        className="mt-3 inline-flex items-center rounded-md bg-[#f1bf42] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#082722] transition-colors hover:bg-[#f7cf68]"
+                      >
+                        View Cart
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

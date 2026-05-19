@@ -9,6 +9,7 @@ import {
   dispatchOrderConfirmed,
 } from "../../hooks/shopEvents";
 import { verifyRazorpayPayment } from "../../services/paymentService";
+import HideStorefrontHeader from "../../components/HideStorefrontHeader";
 
 const INVOICE_ORDER_ID_KEY = "checkout_invoice_order_id";
 const COUPON_STATE_KEY = "cart_coupon_state";
@@ -181,6 +182,7 @@ const SuccessContent = () => {
 
   return (
     <div className="min-h-screen bg-[#f7f2e8] font-montserrat text-[#2e261b]">
+      <HideStorefrontHeader />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#efe0bc_0%,rgba(239,224,188,0.45)_24%,transparent_54%)]" />
       <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid w-full gap-6 lg:grid-cols-[1.15fr_0.85fr]">
