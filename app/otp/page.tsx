@@ -1,10 +1,13 @@
+import { Suspense } from "react";
 import Footer from "../components/Footer";
 import OtpForm from "./components/OtpForm";
 
 const OtpPage = () => {
   return (
     <>
-      <OtpForm />
+      <Suspense fallback={<div>Loading...</div>}>
+        <OtpForm />
+      </Suspense>
       <Footer />
     </>
   );
