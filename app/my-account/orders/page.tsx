@@ -15,7 +15,8 @@ type OrderStatus =
   | "Delivered"
   | "Cancelled"
   | "Returned"
-  | "Exchanged";
+  | "Exchanged"
+  | "Return Requested";
 
 /** Shape of a single item inside an order (as returned by backend) */
 interface RawOrderItem {
@@ -64,6 +65,21 @@ interface RawOrder {
   updatedAt: string;
 }
 
+const normalizeOrderStatus = (status: string): OrderStatus => {
+  switch (status) {
+    case "Processing":
+    case "Shipped":
+    case "Delivered":
+    case "Cancelled":
+    case "Returned":
+    case "Exchanged":
+    case "Return Requested":
+      return status;
+    default:
+      return "Processing";
+  }
+};
+
 /** Normalised UI shape (one "order card" per RawOrder) */
 interface UIOrder {
   id: string;
@@ -97,7 +113,7 @@ const normaliseOrder = (raw: RawOrder): UIOrder => ({
   id: raw._id,
   orderId: raw._id.slice(-10).toUpperCase(), // last 10 chars for display
   placedAt: raw.createdAt,
-  status: raw.orderStatus,
+  status: normalizeOrderStatus(raw.orderStatus),
   totalPrice: raw.totalPrice,
   paymentMethod: raw.paymentInfo.method,
   trackingId: raw.trackingId,
@@ -126,7 +142,7 @@ const STATUS_CONFIG: Record<
     bgColor: "bg-amber-50",
   },
   Shipped: {
-    label: "On the Way",
+    label: "Shipped",
     textColor: "text-blue-700",
     bgColor: "bg-blue-50",
   },
@@ -150,6 +166,11 @@ const STATUS_CONFIG: Record<
     textColor: "text-purple-700",
     bgColor: "bg-purple-50",
   },
+  "Return Requested": {
+    label: "Return Requested",
+    textColor: "text-orange-700",
+    bgColor: "bg-orange-50",
+  },
 };
 
 const TIME_FILTER_OPTIONS = [
@@ -163,10 +184,11 @@ const TIME_FILTER_OPTIONS = [
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: "all", label: "All Orders" },
   { value: "Processing", label: "Processing" },
-  { value: "Shipped", label: "On the Way" },
+  { value: "Shipped", label: "Shipped" },
   { value: "Delivered", label: "Delivered" },
   { value: "Cancelled", label: "Cancelled" },
   { value: "Returned", label: "Returned" },
+  { value: "Return Requested", label: "Return Requested" },
 ];
 
 const PAGE_SIZE = 10;
@@ -506,7 +528,12 @@ const DeliveryLine = ({ order }: { order: UIOrder }) => {
     );
   }
 
-  if (order.status === "Cancelled" || order.status === "Returned" || order.status === "Exchanged") {
+  if (
+    order.status === "Cancelled" ||
+    order.status === "Returned" ||
+    order.status === "Exchanged" ||
+    order.status === "Return Requested"
+  ) {
     return (
       <div className="flex items-center gap-2 text-sm mb-3">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.6" strokeLinecap="round" className="shrink-0">

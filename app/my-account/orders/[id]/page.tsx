@@ -15,7 +15,8 @@ type OrderStatus =
     | "Delivered"
     | "Cancelled"
     | "Returned"
-    | "Exchanged";
+    | "Exchanged"
+    | "Return Requested";
 
 interface OrderItem {
     _id: string;
@@ -54,6 +55,21 @@ interface RawOrder {
     updatedAt: string;
 }
 
+const normalizeOrderStatus = (status: string): OrderStatus => {
+    switch (status) {
+        case "Processing":
+        case "Shipped":
+        case "Delivered":
+        case "Cancelled":
+        case "Returned":
+        case "Exchanged":
+        case "Return Requested":
+            return status;
+        default:
+            return "Processing";
+    }
+};
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_STEPS: Record<OrderStatus, number> = {
@@ -63,15 +79,17 @@ const STATUS_STEPS: Record<OrderStatus, number> = {
     Cancelled: -1,
     Returned: -1,
     Exchanged: -1,
+    "Return Requested": -1,
 };
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
-    Processing: "Order Confirmed",
+    Processing: "Processing",
     Shipped: "Shipped",
     Delivered: "Delivered",
     Cancelled: "Cancelled",
     Returned: "Returned",
     Exchanged: "Exchanged",
+    "Return Requested": "Return Requested",
 };
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -369,10 +387,13 @@ const OrderDetailPage = () => {
 
     if (!order) return null;
 
+    const normalizedStatus = normalizeOrderStatus(order.orderStatus);
+
     const isCancelled =
-        order.orderStatus === "Cancelled" ||
-        order.orderStatus === "Returned" ||
-        order.orderStatus === "Exchanged";
+        normalizedStatus === "Cancelled" ||
+        normalizedStatus === "Returned" ||
+        normalizedStatus === "Exchanged" ||
+        normalizedStatus === "Return Requested";
 
     return (
         <div className="ml-0 lg:ml-20 w-full lg:w-160 font-[family-name:var(--font-montserrat)]">
@@ -457,29 +478,29 @@ const OrderDetailPage = () => {
                         <div className="flex items-start justify-between mb-1">
                             <div>
                                 <p className="text-sm font-bold text-gray-900">
-                                    {STATUS_LABEL[order.orderStatus]}
+                                    {STATUS_LABEL[normalizedStatus]}
                                 </p>
                                 {!isCancelled && (
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        {order.orderStatus === "Delivered"
+                                        {normalizedStatus === "Delivered"
                                             ? "Your order has been delivered."
-                                            : "We have processed your order."}
+                                            : `Your order is ${STATUS_LABEL[normalizedStatus].toLowerCase()}.`}
                                     </p>
                                 )}
                                 {isCancelled && (
                                     <p className="text-xs text-red-500 mt-0.5">
-                                        Order {STATUS_LABEL[order.orderStatus]}.
+                                        Order {STATUS_LABEL[normalizedStatus]}.
                                     </p>
                                 )}
                             </div>
-                            {!isCancelled && order.orderStatus !== "Processing" && (
+                            {!isCancelled && normalizedStatus !== "Processing" && (
                                 <span className="text-[11px] font-semibold px-2 py-0.5 bg-green-50 text-green-700 rounded-full shrink-0 ml-2">
                                     On Time
                                 </span>
                             )}
                             {isCancelled && (
                                 <span className="text-[11px] font-semibold px-2 py-0.5 bg-red-50 text-red-600 rounded-full shrink-0 ml-2">
-                                    {STATUS_LABEL[order.orderStatus]}
+                                    {STATUS_LABEL[normalizedStatus]}
                                 </span>
                             )}
                         </div>
@@ -487,7 +508,7 @@ const OrderDetailPage = () => {
                         {/* Progress track */}
                         {!isCancelled && (
                             <OrderProgress
-                                status={order.orderStatus}
+                                status={normalizedStatus}
                                 placedAt={order.createdAt}
                                 deliveredAt={order.deliveredAt}
                             />

@@ -68,7 +68,15 @@ const AddressForm: React.FC<AddressFormProps> = ({
     >,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "phoneNumber"
+          ? value.replace(/\D/g, "").slice(0, 10)
+          : name === "postalCode"
+            ? value.replace(/\D/g, "").slice(0, 6)
+            : value,
+    }));
   };
 
   const handleTypeSelect = (type: AddressType) => {
@@ -87,6 +95,18 @@ const AddressForm: React.FC<AddressFormProps> = ({
       !formData.postalCode
     ) {
       toast.error("Please fill in all required fields.");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{10}$/.test(formData.phoneNumber)) {
+      toast.error("Mobile number must be exactly 10 digits.");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{6}$/.test(formData.postalCode)) {
+      toast.error("Pincode must be exactly 6 digits.");
       setLoading(false);
       return;
     }
@@ -167,6 +187,10 @@ const AddressForm: React.FC<AddressFormProps> = ({
           name="phoneNumber"
           value={formData.phoneNumber}
           onChange={handleChange}
+          inputMode="numeric"
+          pattern="[0-9]{10}"
+          maxLength={10}
+          autoComplete="tel"
           className="w-full border-b bg-white h-14 border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#bd9951]"
           required
         />
@@ -199,6 +223,9 @@ const AddressForm: React.FC<AddressFormProps> = ({
             name="postalCode"
             value={formData.postalCode}
             onChange={handleChange}
+            inputMode="numeric"
+            pattern="[0-9]{6}"
+            maxLength={6}
             className="w-full border-b bg-white h-14 border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#bd9951]"
             required
           />

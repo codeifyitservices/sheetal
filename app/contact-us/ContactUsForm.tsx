@@ -27,7 +27,10 @@ const ContactUsForm = () => {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = event.target;
-    setForm((previous) => ({ ...previous, [name]: value }));
+    setForm((previous) => ({
+      ...previous,
+      [name]: name === "phone" ? value.replace(/\D/g, "").slice(0, 10) : value,
+    }));
     if (isSubmitted) setIsSubmitted(false);
   };
 
@@ -54,7 +57,7 @@ const ContactUsForm = () => {
     }
 
     const normalizedPhone = form.phone.replace(/\D/g, "");
-    if (normalizedPhone.length < 10) {
+    if (normalizedPhone.length !== 10) {
       toast.error("Please enter a valid phone number.");
       return false;
     }
@@ -133,6 +136,10 @@ const ContactUsForm = () => {
             value={form.phone}
             onChange={handleChange}
             placeholder="Your contact no."
+            inputMode="numeric"
+            pattern="[0-9]{10}"
+            maxLength={10}
+            autoComplete="tel"
             className={inputClassName}
             required
           />

@@ -127,7 +127,7 @@ const ProductListBanner: React.FC<ProductListBannerProps> = ({
           sizes="100vw"
         />
         {/* Logo Overlay */}
-        <div className="absolute inset-0 z-10 flex items-start py-10 justify-center pointer-events-none">
+        {/* <div className="absolute inset-0 z-10 flex items-start py-10 justify-center pointer-events-none">
           <Link href="/" className="pointer-events-auto">
             <Image
               src="/assets/625030871.png"
@@ -137,7 +137,7 @@ const ProductListBanner: React.FC<ProductListBannerProps> = ({
               className="w-auto h-[160px] md:h-[260px]"
             />
           </Link>
-        </div>
+        </div> */}
       </div>
 
       <div

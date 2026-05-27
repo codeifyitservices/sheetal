@@ -7,6 +7,7 @@ type AddressType = "Home" | "Office" | "Other";
 
 const normalizePhoneNumber = (value: string) =>
   value.replace(/\D/g, "").slice(0, 10);
+const normalizePincode = (value: string) => value.replace(/\D/g, "").slice(0, 6);
 
 const normalizeAddressType = (value?: string): AddressType => {
   if (value === "Office" || value === "Other") return value;
@@ -63,7 +64,7 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
           lastName: initialData.lastName || "",
           phoneNumber: normalizePhoneNumber(initialData.phoneNumber || ""),
           address: initialData.address || "",
-          pincode: initialData.pincode || "",
+          pincode: normalizePincode(initialData.pincode || ""),
           city: initialData.city || "",
           state: initialData.state || "",
           country: initialData.country || "",
@@ -87,6 +88,8 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
           ? checked
           : name === "phoneNumber"
             ? normalizePhoneNumber(value)
+            : name === "pincode"
+              ? normalizePincode(value)
             : value,
     }));
   };
@@ -100,6 +103,11 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
 
     if (!/^\d{10}$/.test(formData.phoneNumber)) {
       toast.error("Mobile number must be exactly 10 digits.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(formData.pincode)) {
+      toast.error("Pincode must be exactly 6 digits.");
       return;
     }
 
@@ -204,6 +212,9 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
                   required
                   value={formData.pincode}
                   onChange={handleChange}
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
                   className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#a97f0f]"
                 />
               </div>
