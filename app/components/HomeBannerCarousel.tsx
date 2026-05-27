@@ -73,42 +73,108 @@ const fallbackMobile = [
   },
 ];
 
+const AUTO_ROTATE_MS = 5000;
+const TRANSITION_MS = 700;
+
+const dedupeById = <T extends { _id: string }>(items: T[]) => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!item?._id || seen.has(item._id)) return false;
+    seen.add(item._id);
+    return true;
+  });
+};
+
 const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
-  const desktopBanners = banners.filter(hasDesktopImage);
-  const mobileBanners = banners.filter(hasMobileImage);
+  const desktopBanners = dedupeById(banners.filter(hasDesktopImage));
+  const mobileBanners = dedupeById(banners.filter(hasMobileImage));
   const resolvedDesktopBanners =
     desktopBanners.length > 0 ? desktopBanners : fallbackDesktop;
   const resolvedMobileBanners =
     mobileBanners.length > 0 ? mobileBanners : fallbackMobile;
   const [desktopIndex, setDesktopIndex] = useState(0);
   const [mobileIndex, setMobileIndex] = useState(0);
+  const [desktopTransitionEnabled, setDesktopTransitionEnabled] = useState(true);
+  const [mobileTransitionEnabled, setMobileTransitionEnabled] = useState(true);
+  const desktopLoopBanners =
+    resolvedDesktopBanners.length > 1
+      ? [...resolvedDesktopBanners, resolvedDesktopBanners[0]]
+      : resolvedDesktopBanners;
+  const mobileLoopBanners =
+    resolvedMobileBanners.length > 1
+      ? [...resolvedMobileBanners, resolvedMobileBanners[0]]
+      : resolvedMobileBanners;
 
   useEffect(() => {
     if (resolvedDesktopBanners.length <= 1) return;
     const intervalId = window.setInterval(() => {
-      setDesktopIndex((current) => (current + 1) % resolvedDesktopBanners.length);
-    }, 5000);
+      setDesktopTransitionEnabled(true);
+      setDesktopIndex((current) => current + 1);
+    }, AUTO_ROTATE_MS);
     return () => window.clearInterval(intervalId);
   }, [resolvedDesktopBanners.length]);
 
   useEffect(() => {
     if (resolvedMobileBanners.length <= 1) return;
     const intervalId = window.setInterval(() => {
-      setMobileIndex((current) => (current + 1) % resolvedMobileBanners.length);
-    }, 5000);
+      setMobileTransitionEnabled(true);
+      setMobileIndex((current) => current + 1);
+    }, AUTO_ROTATE_MS);
     return () => window.clearInterval(intervalId);
   }, [resolvedMobileBanners.length]);
+
+  useEffect(() => {
+    if (resolvedDesktopBanners.length <= 1) return;
+    if (desktopIndex !== resolvedDesktopBanners.length) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setDesktopTransitionEnabled(false);
+      setDesktopIndex(0);
+    }, TRANSITION_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [desktopIndex, resolvedDesktopBanners.length]);
+
+  useEffect(() => {
+    if (resolvedMobileBanners.length <= 1) return;
+    if (mobileIndex !== resolvedMobileBanners.length) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setMobileTransitionEnabled(false);
+      setMobileIndex(0);
+    }, TRANSITION_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [mobileIndex, resolvedMobileBanners.length]);
+
+  useEffect(() => {
+    if (!desktopTransitionEnabled) {
+      const frameId = window.requestAnimationFrame(() => {
+        setDesktopTransitionEnabled(true);
+      });
+      return () => window.cancelAnimationFrame(frameId);
+    }
+  }, [desktopTransitionEnabled]);
+
+  useEffect(() => {
+    if (!mobileTransitionEnabled) {
+      const frameId = window.requestAnimationFrame(() => {
+        setMobileTransitionEnabled(true);
+      });
+      return () => window.cancelAnimationFrame(frameId);
+    }
+  }, [mobileTransitionEnabled]);
 
   return (
     <div className="relative w-full p-0 home-banner">
       <div className="relative hidden md:block">
         <div className="relative overflow-hidden">
           <div
-            className="flex transition-transform duration-700 ease-out"
+            className={`flex ease-out ${desktopTransitionEnabled ? "transition-transform duration-700" : ""}`}
             style={{ transform: `translate3d(-${desktopIndex * 100}%, 0, 0)` }}
           >
-            {resolvedDesktopBanners.map((banner, index) => (
-              <div key={banner._id} className="banner-carousel-item min-w-full outline-none">
+            {desktopLoopBanners.map((banner, index) => (
+              <div key={`${banner._id}-desktop-${index}`} className="banner-carousel-item min-w-full outline-none">
                 <Link href={resolveBannerHref(banner.link)}>
                   <div className="relative aspect-[8/3] min-h-[640px] w-full bg-[#e9e0d1]">
                     <Image
@@ -136,11 +202,12 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
                 type="button"
                 aria-label="Previous banner"
                 className="absolute left-[50px] top-1/2 z-10 hidden -translate-y-1/2 cursor-pointer md:flex"
-                onClick={() =>
+                onClick={() => {
+                  setDesktopTransitionEnabled(true);
                   setDesktopIndex((current) =>
                     current === 0 ? resolvedDesktopBanners.length - 1 : current - 1,
-                  )
-                }
+                  );
+                }}
               >
                 <ArrowIcon src="/assets/left-image.png" alt="Previous banner" />
               </button>
@@ -148,9 +215,12 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
                 type="button"
                 aria-label="Next banner"
                 className="absolute right-[50px] top-1/2 z-10 hidden -translate-y-1/2 cursor-pointer md:flex"
-                onClick={() =>
-                  setDesktopIndex((current) => (current + 1) % resolvedDesktopBanners.length)
-                }
+                onClick={() => {
+                  setDesktopTransitionEnabled(true);
+                  setDesktopIndex((current) =>
+                    current === resolvedDesktopBanners.length ? current : current + 1,
+                  );
+                }}
               >
                 <ArrowIcon src="/assets/right-image.png" alt="Next banner" />
               </button>
@@ -162,11 +232,11 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
       <div className="relative block md:hidden">
         <div className="relative overflow-hidden">
           <div
-            className="flex transition-transform duration-700 ease-out"
+            className={`flex ease-out ${mobileTransitionEnabled ? "transition-transform duration-700" : ""}`}
             style={{ transform: `translate3d(-${mobileIndex * 100}%, 0, 0)` }}
           >
-            {resolvedMobileBanners.map((banner, index) => (
-              <div key={banner._id} className="banner-carousel-item min-w-full outline-none">
+            {mobileLoopBanners.map((banner, index) => (
+              <div key={`${banner._id}-mobile-${index}`} className="banner-carousel-item min-w-full outline-none">
                 <Link href={resolveBannerHref(banner.link)}>
                   <div className="relative min-h-[100svh] w-full bg-[#e9e0d1]">
                     <Image

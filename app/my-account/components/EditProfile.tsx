@@ -775,8 +775,16 @@ const EditProfile: React.FC = () => {
                 <input
                   type="text"
                   value={alternativeMobileNumber}
-                  onChange={(e) => setAlternativeMobileNumber(e.target.value)}
+                  onChange={(e) =>
+                    setAlternativeMobileNumber(
+                      e.target.value.replace(/\D/g, "").slice(0, 10),
+                    )
+                  }
                   placeholder="Mobile Number"
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                  autoComplete="tel"
                   className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-[#8b6b2f]"
                 />
               </div>

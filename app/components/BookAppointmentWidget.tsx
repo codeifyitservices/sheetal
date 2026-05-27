@@ -43,7 +43,17 @@ const BookAppointmentWidget: React.FC = () => {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]:
+        name === "contact"
+          ? value.replace(/\D/g, "").slice(0, 10)
+          : name === "pincode"
+            ? value.replace(/\D/g, "").slice(0, 6)
+          : value,
+    }));
   };
 
   const validate = (): boolean => {
@@ -232,10 +242,14 @@ const BookAppointmentWidget: React.FC = () => {
                   <Label text="Contact" />
                   <input
                     name="contact"
+                    type="tel"
                     value={form.contact}
                     onChange={handleChange}
                     placeholder="10-digit mobile number"
                     maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    autoComplete="tel"
                     className={inputClass}
                   />
                 </div>
@@ -266,9 +280,12 @@ const BookAppointmentWidget: React.FC = () => {
                     <Label text="Pincode" />
                     <input
                       name="pincode"
+                      type="text"
                       value={form.pincode}
                       onChange={handleChange}
                       placeholder="6-digit pincode"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
                       maxLength={6}
                       className={inputClass}
                     />
