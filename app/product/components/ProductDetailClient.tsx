@@ -578,8 +578,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
           if (
             v.color &&
             typeof v.color === "object" &&
-            v.color.name &&
-            s.stock > 0
+            v.color.name
           ) {
             if (!colorToAvailableSizesMap.has(v.color.name)) {
               colorToAvailableSizesMap.set(v.color.name, new Set<string>());
@@ -817,7 +816,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
               setPincode={setPincode}
               pincodeMessage={pincodeMessage}
               checkPincode={checkPincode}
-              isOutOfStock={product.stock <= 0}
+              isOutOfStock={selectedSizeObject ? selectedSizeObject.stock <= 0 : product.stock <= 0}
               selectedVariantData={selectedVariantData}
               selectedVariantSizes={currentSelectedVariant?.sizes || []}
               hasSizeChart={Boolean(sizeChartData)}
@@ -854,6 +853,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         onClose={() => setEnquireModalOpen(false)}
         productTitle={product.name}
         sizes={productInfoData.allSizes}
+        defaultSize={selectedSize}
       />
 
       <SizeChartModal

@@ -266,13 +266,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
                 product.colorToAvailableSizesMap[selectedColor]?.includes(
                   size.name,
                 );
-              const isDisabled = !isAvailableForSelectedColor || isOutOfStock;
 
               const actualStock =
                 isAvailableForSelectedColor && selectedVariantSizes.length > 0
                   ? selectedVariantSizes.find((s) => s.name === size.name)
                       ?.stock
                   : undefined;
+
+              const isSoldOut = actualStock !== undefined && actualStock <= 0;
+              const isDisabled = !isAvailableForSelectedColor;
 
               return (
                 <div key={size.name} className="flex flex-col items-center">
@@ -296,7 +298,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
                     `}
                   >
                     {size.name}
-                    {isDisabled && (
+                    {(isDisabled || isSoldOut) && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div
                           className={`w-full h-px bg-gray-400 transform ${size.name === "One Size" || size.name === "Free Size" ? "rotate-25" : "rotate-45"}`}

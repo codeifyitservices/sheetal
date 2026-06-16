@@ -7,6 +7,7 @@ interface EnquireModalProps {
   onClose: () => void;
   productTitle: string;
   sizes?: { name: string }[];
+  defaultSize?: string;
 }
 
 const EnquireModal: React.FC<EnquireModalProps> = ({
@@ -14,14 +15,21 @@ const EnquireModal: React.FC<EnquireModalProps> = ({
   onClose,
   productTitle,
   sizes = [],
+  defaultSize = "",
 }) => {
-  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedSize, setSelectedSize] = useState(defaultSize);
   const [name, setName]       = useState("");
   const [email, setEmail]     = useState("");
   const [phone, setPhone]     = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted]       = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setSelectedSize(defaultSize);
+    }
+  }, [isOpen, defaultSize]);
 
   if (!isOpen) return null;
 
