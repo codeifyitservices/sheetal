@@ -17,6 +17,7 @@ interface CartItemsListProps {
   updateCartItemQuantity: (itemId: string, quantity: number) => Promise<void>;
   onShareCart: () => Promise<string | null>;
   handleRemoveItem: (item: CartItem) => void;
+  handleMoveToWishlistAction: (item: CartItem) => void;
   isModalOpen: boolean;
   confirmRemoveItem: () => Promise<void>;
   cancelRemoveItem: () => void;
@@ -38,6 +39,7 @@ const CartItemsList: React.FC<CartItemsListProps> = ({
   updateCartItemQuantity,
   onShareCart,
   handleRemoveItem,
+  handleMoveToWishlistAction,
   isModalOpen,
   confirmRemoveItem,
   cancelRemoveItem,
@@ -97,7 +99,7 @@ const CartItemsList: React.FC<CartItemsListProps> = ({
           onCancel={cancelRemoveItem}
           onMoveToWishlist={handleMoveToWishlist}
           isBulkAction={isBulkAction}
-          itemCount={selectedItemIds.length}
+          itemCount={isBulkAction ? selectedItemIds.length : 1}
           mode={modalAction}
         />
       )}
@@ -257,7 +259,7 @@ const CartItemsList: React.FC<CartItemsListProps> = ({
                     <button
                       className="text-xs cursor-pointer md:text-[12px] tracking-[1px] text-[#bd9951] font-[family-name:var(--font-montserrat)] underline underline-offset-2 mt-2 block"
                       onClick={() =>
-                        moveFromCartToWishlist(item._id, item.product._id)
+                        handleMoveToWishlistAction(item)
                       }
                     >
                       Move to Wishlist

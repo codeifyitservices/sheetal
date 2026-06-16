@@ -80,6 +80,7 @@ interface RelatedProduct {
   mrp: number;
   discount: string;
   soldOut: boolean;
+  rating: number;
 }
 
 // ─── Price helpers ────────────────────────────────────────────────────────────
@@ -274,7 +275,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
                 fabric: productFabrics[0],
                 minPrice: Math.max(0, currentMinPrice - 2000),
                 maxPrice: currentMinPrice + 2000,
-                limit: 10,
+                limit: 50,
                 status: "Active",
               })
             : Promise.resolve(null),
@@ -283,7 +284,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
                 category: categoryId,
                 minPrice: Math.max(0, currentMinPrice - 2000),
                 maxPrice: currentMinPrice + 2000,
-                limit: 10,
+                limit: 50,
                 status: "Active",
               })
             : Promise.resolve(null),
@@ -330,6 +331,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
 
           const entry = {
             id: res.data.slug,
+            productId: res.data._id,
             name: res.data.name,
             image: getProductImageUrl(res.data),
             hoverImage: res.data.hoverImage?.url
@@ -339,6 +341,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
             mrp: minMRP,
             discount: currentDiscount,
             soldOut: res.data.stock <= 0,
+            rating: res.data.averageRating || 0,
           };
           const prev = JSON.parse(
             localStorage.getItem(RV_KEY) || "[]",
@@ -739,6 +742,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         mrp: minMRP,
         discount: currentDiscount,
         soldOut: p.stock <= 0,
+        rating: p.averageRating || 0,
         _sameCategory: p.category?._id === product.category?._id,
         _sameFabric: (p.fabric ?? []).some((f: string) =>
           productFabricSet.has(f.trim().toLowerCase()),

@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import { Toaster } from "react-hot-toast";
 import StorefrontHeader from "./components/StorefrontHeader";
 import "./globals.css";
+import GlobalWidgets from "./components/GlobalWidgets";
 
 const optima = localFont({
   src: [
@@ -91,6 +92,7 @@ export default function RootLayout({
           <StorefrontHeader />
         </div>
         {children}
+        <GlobalWidgets />
       </body>
     </html>
   );

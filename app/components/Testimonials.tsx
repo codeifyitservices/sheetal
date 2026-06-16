@@ -88,8 +88,8 @@ const Testimonials = () => {
                             <Image
                               src={item.image.url}
                               alt={item.image.alt || item.name}
-                              width={80}
-                              height={128}
+                              width={400}
+                              height={600}
                               className="w-full h-full object-cover"
                             />
                           ) : (

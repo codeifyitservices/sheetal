@@ -11,6 +11,7 @@ interface User {
   phoneNumber?: string;
   email?: string;
   role: string;
+  status?: string;
   alternativeMobileNumber?: string;
   gender?: "Male" | "Female";
   dateOfBirth?: string;

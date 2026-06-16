@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import ProductCard from "./ProductCard";
+import Image from "next/image";
 
 interface RelatedProductItem {
   id: string;
@@ -12,6 +13,7 @@ interface RelatedProductItem {
   mrp?: number;
   discount?: string;
   soldOut?: boolean;
+  rating?: number;
 }
 
 interface RelatedProductsProps {
@@ -30,30 +32,66 @@ const EmblaSlider = ({
   isProductInWishlist: (id: string) => boolean;
   onToggleWishlist: (id: string) => void;
 }) => {
-  const [emblaRef] = useEmblaCarousel({
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
     dragFree: true,
   });
 
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+
   return (
-    <div className="overflow-hidden" ref={emblaRef}>
-      <div className="flex gap-4">
-        {products.map((product) => (
-          <div
-            key={product.id}
-            className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] md:flex-[0_0_33.33%] lg:flex-[0_0_25%]"
-          >
-            <ProductCard
-              product={product}
-              isWishlisted={isProductInWishlist(
-                product.productId || product.id, // productId now exists
-              )}
-              onToggleWishlist={onToggleWishlist}
-            />
-          </div>
-        ))}
+    <div className="relative group/slider">
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex gap-4">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] md:flex-[0_0_33.33%] lg:flex-[0_0_25%]"
+            >
+              <ProductCard
+                product={product}
+                isWishlisted={isProductInWishlist(
+                  product.productId || product.id, // productId now exists
+                )}
+                onToggleWishlist={onToggleWishlist}
+              />
+            </div>
+          ))}
+        </div>
       </div>
+
+      {products.length > 4 && (
+        <>
+          <button
+            onClick={scrollPrev}
+            aria-label="Previous product"
+            className="absolute left-[-20px] md:left-[-50px] cursor-pointer top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 z-10"
+          >
+            <Image
+              src="/assets/left-image.png"
+              alt=""
+              width={48}
+              height={48}
+              className="w-full h-auto"
+            />
+          </button>
+          <button
+            onClick={scrollNext}
+            aria-label="Next product"
+            className="absolute right-[-20px] md:right-[-50px] cursor-pointer top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 z-10"
+          >
+            <Image
+              src="/assets/right-image.png"
+              alt=""
+              width={48}
+              height={48}
+              className="w-full h-auto"
+            />
+          </button>
+        </>
+      )}
     </div>
   );
 };
@@ -70,7 +108,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
     try {
       const raw = localStorage.getItem("__rv__");
       const parsed = raw ? (JSON.parse(raw) as RelatedProductItem[]) : [];
-      return parsed.filter((product) => product.id !== currentSlug).slice(0, 3);
+      return parsed.filter((product) => product.id !== currentSlug);
     } catch {
       return [];
     }

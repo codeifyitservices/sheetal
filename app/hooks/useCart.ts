@@ -608,6 +608,13 @@ export const useCart = (): UseCartReturn => {
    */
   const removeFromCart = useCallback(
     async (itemId: string, options?: { silent?: boolean }) => {
+      // 1. Snapshot for rollback
+      const previousCart = [...cart];
+
+      // 2. Optimistically update local state
+      const updatedCart = cart.filter((item) => item._id !== itemId);
+      setCart(commitCartSnapshot(updatedCart));
+
       try {
         if (isAuthenticated()) {
           const response = await removeFromCartApi(itemId);
@@ -615,16 +622,20 @@ export const useCart = (): UseCartReturn => {
             if (!options?.silent) {
               toast.success(response.message || "Item removed from cart!");
             }
+            // Sync with server state
             await loadCart(false);
             dispatchCartUpdated();
             resetCoupon();
           } else {
+            // Rollback on server error
+            setCart(commitCartSnapshot(previousCart));
             toast.error(response.message || "Failed to remove item from cart.");
           }
         } else {
           // Guest: remove from localStorage
           const guestItems = readGuestCart().filter((g) => g._id !== itemId);
           writeGuestCart(guestItems);
+          // UI already updated above, but let's be consistent
           setCart(commitCartSnapshot(guestToCartItems(guestItems)));
           dispatchCartUpdated();
           if (!options?.silent) {
@@ -633,11 +644,13 @@ export const useCart = (): UseCartReturn => {
           resetCoupon();
         }
       } catch (error: unknown) {
+        // Rollback on network error
+        setCart(commitCartSnapshot(previousCart));
         console.error("Error removing from cart:", error);
         toast.error("Could not remove item from cart. Please try again.");
       }
     },
-    [loadCart, resetCoupon],
+    [cart, loadCart, resetCoupon],
   );
 
   const moveFromCartToWishlist = useCallback(
@@ -646,13 +659,23 @@ export const useCart = (): UseCartReturn => {
       productId: string,
       options?: { silent?: boolean },
     ) => {
+      // Snapshot for rollback
+      const previousCart = [...cart];
+
+      // Optimistically remove from cart
+      const updatedCart = cart.filter((item) => item._id !== itemId);
+      setCart(commitCartSnapshot(updatedCart));
+
       try {
         const removeResponse = await removeFromCartApi(itemId);
         if (removeResponse.success) {
+          // Sync cart with server
           await loadCart(false);
           dispatchCartUpdated();
           resetCoupon();
 
+          // We trigger toggle on wishlist, useWishlist will handle its own optimism if called there, 
+          // but here we just trigger the event.
           const wishlistResponse = await toggleWishlistApi(productId);
           if (wishlistResponse.success) {
             dispatchWishlistUpdated();
@@ -660,17 +683,22 @@ export const useCart = (): UseCartReturn => {
               toast.success("Item moved to wishlist!");
             }
           } else {
+            // Wishlist failed, but cart removal succeeded. 
+            // We don't rollback cart as that would be confusing (item comes back but wishlist check failed).
             toast.error(wishlistResponse.message || "Failed to add to wishlist.");
           }
         } else {
+          // Rollback cart if removal failed
+          setCart(commitCartSnapshot(previousCart));
           toast.error(removeResponse.message || "Failed to remove item from cart.");
         }
       } catch (error: unknown) {
+        setCart(commitCartSnapshot(previousCart));
         console.error("Error moving to wishlist:", error);
         toast.error("Could not move item to wishlist. Please try again.");
       }
     },
-    [loadCart, resetCoupon],
+    [cart, loadCart, resetCoupon],
   );
 
   // Calculate totals whenever cart or coupon changes
@@ -901,6 +929,9 @@ export const useCart = (): UseCartReturn => {
    */
   const updateCartItemQuantity = useCallback(
     async (itemId: string, quantity: number) => {
+      // 1. Snapshot for rollback
+      const previousCart = [...cart];
+
       try {
         const existingItem = cart.find((item) => item._id === itemId);
         const availableStock = existingItem ? getItemAvailableStock(existingItem) : 0;
@@ -910,22 +941,25 @@ export const useCart = (): UseCartReturn => {
           return;
         }
 
+        // 2. Optimistically update local state
+        const nextCart =
+          quantity <= 0
+            ? cart.filter((item) => item._id !== itemId)
+            : cart.map((item) =>
+                item._id === itemId ? { ...item, quantity } : item,
+              );
+        setCart(commitCartSnapshot(nextCart));
+
         if (isAuthenticated()) {
           const response = await updateCartItemQuantityApi(itemId, quantity);
           if (response.success) {
-            setCart((prevCart) => {
-              const nextCart =
-                quantity <= 0
-                  ? prevCart.filter((item) => item._id !== itemId)
-                  : prevCart.map((item) =>
-                      item._id === itemId ? { ...item, quantity } : item,
-                    );
-              cachedCartSnapshot = nextCart;
-              return nextCart;
-            });
+            // Refetch to ensure everything is in sync (totals, coupons, etc)
+            await loadCart(false);
             dispatchCartUpdated();
             resetCoupon();
           } else {
+            // Rollback on server error
+            setCart(commitCartSnapshot(previousCart));
             toast.error(response.message || "Failed to update quantity.");
           }
         } else {
@@ -940,11 +974,13 @@ export const useCart = (): UseCartReturn => {
           resetCoupon();
         }
       } catch (error: unknown) {
+        // Rollback on network error
+        setCart(commitCartSnapshot(previousCart));
         console.error("Error updating cart quantity:", error);
         toast.error("Could not update quantity. Please try again.");
       }
     },
-    [cart, resetCoupon],
+    [cart, loadCart, resetCoupon],
   );
 
   const removeCoupon = useCallback((options?: { silent?: boolean }) => {

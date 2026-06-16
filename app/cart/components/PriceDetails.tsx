@@ -20,6 +20,9 @@ import {
   peekRedirectModalState,
   redirectToLogin,
 } from "@/app/utils/authRedirect";
+import useSWR from "swr";
+import { getSettings } from "@/app/services/settingsService";
+import { X } from "lucide-react";
 
 interface PriceDetailsProps {
   couponInput: string;
@@ -111,6 +114,9 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  const { data: settings } = useSWR("/settings", getSettings);
+  const [showPlatformFeeModal, setShowPlatformFeeModal] = useState(false);
 
   useEffect(() => {
     if (!shouldRestoreCouponModal) {
@@ -371,14 +377,14 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
 
             {platformFee > 0 && (
               <div className="flex justify-between font-[family-name:var(--font-montserrat)]">
-                <span>
+                <span className="flex items-center">
                   Platform Fee
-                  <Link
-                    href="#"
-                    className="text-[#73561e] text-sm font-medium underline ml-3"
+                  <button
+                    onClick={() => setShowPlatformFeeModal(true)}
+                    className="text-[#73561e] text-sm font-medium underline ml-3 cursor-pointer"
                   >
                     Know More
-                  </Link>
+                  </button>
                 </span>
 
                 <span className="text-gray-900">₹{platformFee.toFixed(2)}</span>
@@ -572,6 +578,44 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
               >
                 Apply Coupon
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Platform Fee Modal */}
+      {showPlatformFeeModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[60] p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-slate-50">
+              <h2 className="font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                <Image src="/assets/icons/tag.svg" alt="" width={18} height={18} className="opacity-70" />
+                Platform Fee
+              </h2>
+              <button
+                className="cursor-pointer p-1 hover:bg-white rounded-full transition-colors"
+                onClick={() => setShowPlatformFeeModal(false)}
+              >
+                <X/>
+              </button>
+            </div>
+
+            <div className="p-8">
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                <p className="text-[#6a3f07] text-[15px] leading-relaxed font-medium whitespace-pre-wrap">
+                  {settings?.platformFeeKnowMore ||
+                    "This small fee helps us maintain our platform and continue providing you with the best shopping experience and premium quality products."}
+                </p>
+              </div>
+
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setShowPlatformFeeModal(false)}
+                  className="bg-[#72561e] text-white px-10 py-2.5 rounded-full font-bold text-sm uppercase tracking-wider hover:bg-[#5a4318] transition-colors cursor-pointer shadow-lg shadow-amber-900/10"
+                >
+                  Got it
+                </button>
+              </div>
             </div>
           </div>
         </div>

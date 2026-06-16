@@ -62,7 +62,7 @@ export const createCODOrder = async (
  */
 export const getMyOrders = async (
   page: number = 1,
-  limit: number = 10,
+  limit: number = 50,
   status?: string,
 ) => {
   let url = `/orders/my-orders?page=${page}&limit=${limit}`;

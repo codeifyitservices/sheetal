@@ -41,9 +41,6 @@ const Blogs = dynamic(() => import("./Blogs"), {
   ssr: false,
   loading: sectionShell("px-4 py-12"),
 });
-const BookAppointmentWidget = dynamic(() => import("./BookAppointmentWidget"), {
-  ssr: false,
-});
 
 const HomeDeferredSections = ({
   sections,
@@ -80,11 +77,6 @@ const HomeDeferredSections = ({
       {sections?.testimonials && (
         <DeferredSection fallback={sectionShell("px-4 py-12")()}>
           <Testimonials />
-        </DeferredSection>
-      )}
-      {sections?.bookAppointmentWidget && (
-        <DeferredSection idleTimeout={2500}>
-          <BookAppointmentWidget />
         </DeferredSection>
       )}
       {sections?.blogs && (

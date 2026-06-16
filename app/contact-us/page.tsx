@@ -5,6 +5,15 @@ import { Mail, Phone } from "lucide-react";
 
 import Footer from "../components/Footer";
 import ContactUsForm from "./ContactUsForm";
+import { getSettings } from "../services/settingsService";
+
+const ContactUs = async () => {
+  const settings = await getSettings();
+  const supportEmail = settings?.supportEmail || "info@studiobysheetal.com";
+  const supportWhatsapp = settings?.supportWhatsapp || "919958813913";
+  const displayPhone = supportWhatsapp.startsWith("91") && supportWhatsapp.length === 12
+    ? `+91 ${supportWhatsapp.slice(2, 7)} ${supportWhatsapp.slice(7)}`
+    : supportWhatsapp;
 
 export const metadata: Metadata = {
   title: "Contact Us | Studio By Sheetal",
@@ -12,7 +21,7 @@ export const metadata: Metadata = {
   keywords: "contact studio by sheetal, customer support, saree inquiry, ethnic wear contact",
 };
 
-const ContactUs = () => {
+const ContactUs = async () => {
   return (
     <>
       <div className="container-fluid p-0 relative overflow-hidden md:mt-[75px] mb-5 text-center">
@@ -74,7 +83,7 @@ const ContactUs = () => {
                                 Email:
                               </h4>
                               <p className="font-[family-name:var(--font-montserrat)] text-[15px] text-black mt-2">
-                                info@studiobysheetal.com
+                                {supportEmail}
                               </p>
                             </div>
                           </div>
@@ -90,7 +99,7 @@ const ContactUs = () => {
                                 Mobile:
                               </h4>
                               <p className="font-[family-name:var(--font-montserrat)] text-[15px] text-black mt-2">
-                                +91 99588 13913
+                                {displayPhone.startsWith("+") ? displayPhone : `+${displayPhone}`}
                               </p>
                             </div>
                           </div>

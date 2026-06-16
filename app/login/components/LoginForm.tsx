@@ -212,6 +212,13 @@ const LoginForm = () => {
       const data = await verifyIdToken(idToken);
 
       if (data.success && data.token) {
+        if (data.user?.status === "Inactive") {
+          toast.error(
+            "This ID has been blocked by the admin due to some reasons, please contact the team for further procedures",
+            { duration: 6000 },
+          );
+          return;
+        }
         login(data.token, data.user);
         await mergeGuestCartOnLogin();
         toast.success("Logged in successfully!");
@@ -222,7 +229,18 @@ const LoginForm = () => {
           router.push("/");
         }
       } else {
-        toast.error(data.message || "Backend login failed.");
+        const isBlocked =
+          data.message?.toLowerCase().includes("blocked") ||
+          data.message?.toLowerCase().includes("inactive");
+
+        if (isBlocked) {
+          toast.error(
+            "This ID has been blocked by the admin due to some reasons, please contact the team for further procedures",
+            { duration: 6000 },
+          );
+        } else {
+          toast.error(data.message || "Backend login failed.");
+        }
       }
     } catch (error: unknown) {
       const firebaseError = error as { code?: string; message?: string };
@@ -319,7 +337,7 @@ const LoginForm = () => {
                 <p>
                   By continuing, I agree to the{" "}
                   <Link
-                    href="/terms-of-use"
+                    href="/terms-conditions"
                     className="underline text-[#6b4a1f]"
                   >
                     Terms of Use

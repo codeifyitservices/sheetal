@@ -166,7 +166,7 @@ const ProductListContent = ({
   ======================= */
   const filterOptions = useProductFilters(products);
 
-  const loading = isResolvingCategory || productsLoading;
+  const loading = isResolvingCategory || (productsLoading && products.length === 0);
   const queryString = searchParams.toString();
 
   useEffect(() => {

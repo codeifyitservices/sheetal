@@ -10,7 +10,7 @@ import {
   Product,
 } from "../services/productService";
 
-const INSTAGRAM_DIARIES_PRODUCT_LIMIT = 10;
+const INSTAGRAM_DIARIES_PRODUCT_LIMIT = 50;
 const MIN_FOR_CAROUSEL_DESKTOP = 5;
 const MIN_FOR_CAROUSEL_MOBILE = 2;
 const INSTAGRAM_URL = "https://www.instagram.com/";

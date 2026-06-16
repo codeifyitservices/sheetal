@@ -301,6 +301,7 @@ export interface CollectionProduct {
   mrp: string | null;
   discount: string | null;
   soldOut: boolean;
+  averageRating?: number;
 }
 
 export const getCollectionProducts = async (): Promise<CollectionProduct[]> => {

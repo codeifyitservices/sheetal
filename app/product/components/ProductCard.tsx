@@ -91,9 +91,8 @@ const ProductCard = ({
 
         {/* Bottom-pinned section */}
         <div className="mt-auto pt-2 space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-[16px] text-gray-800">Size: XL</span>
-            <StarRating rating={4} />
+          <div className="flex justify-start items-center w-full text-left">
+            <StarRating rating={product.rating || 0} />
           </div>
 
           <div className="flex items-center gap-2 text-sm">

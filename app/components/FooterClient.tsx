@@ -54,10 +54,18 @@ export type RawFooterBlock = {
   children?: unknown;
 };
 
-const FooterClient = ({ layout }: { layout: FooterBlock[] }) => {
+const FooterClient = ({
+  layout,
+  whatsapp,
+}: {
+  layout: FooterBlock[];
+  whatsapp?: string;
+}) => {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const pathname = usePathname();
   const showBackToTop = pathname !== "/";
+
+  const finalWhatsapp = whatsapp || "919958813913";
 
   const handleSubscribe = async () => {
     if (!newsletterEmail.trim()) {
@@ -242,7 +250,7 @@ const FooterClient = ({ layout }: { layout: FooterBlock[] }) => {
       {showBackToTop && (
         <a
           href="#"
-          className="fixed bottom-[90px] right-[30px] z-50 flex h-[40px] w-[40px] items-center justify-center rounded-full border border-[#90c03e] text-[#90c03e] transition-colors"
+          className="fixed bottom-[20px] right-[30px] z-50 flex h-[40px] w-[40px] items-center justify-center rounded-full border border-[#90c03e] text-[#90c03e] transition-colors"
         >
           <ArrowUp />
         </a>
@@ -250,7 +258,7 @@ const FooterClient = ({ layout }: { layout: FooterBlock[] }) => {
 
       <a
         target="_blank"
-        href="https://api.whatsapp.com/send?phone=919958813913"
+        href={`https://api.whatsapp.com/send?phone=${finalWhatsapp}`}
         rel="noopener"
         className="fixed bottom-[84px] left-[18px] z-[999]"
       >

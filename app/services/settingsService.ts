@@ -23,6 +23,7 @@ interface Settings {
   globalHsnCode?: string;
   deliveryPoint2?: string;
   deliveryPoint3?: string;
+  platformFeeKnowMore?: string;
 }
 
 export const getSettings = async (): Promise<Settings> => {

@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getOrderById } from "../../services/orderService";
 import { getBasicInfo } from "../../services/basicInfoService";
 import { getSettings } from "../../services/settingsService";
+import { logout } from "../../services/authService";
+import Cookies from "js-cookie";
 import HideStorefrontHeader from "../../components/HideStorefrontHeader";
 
 type OrderStatus =
@@ -39,6 +41,11 @@ interface OrderItem {
 
 interface Order {
   _id: string;
+  user: {
+    _id: string;
+    name?: string;
+    email: string;
+  };
   orderItems: OrderItem[];
   orderStatus: OrderStatus;
   totalPrice: number;
@@ -154,6 +161,12 @@ const InvoicePageInner = () => {
 
   useEffect(() => {
     const fetchOrder = async () => {
+      const token = localStorage.getItem("token") || Cookies.get("token");
+      if (!token) {
+        router.replace(`/login?redirect=/checkout/download-invoice?orderId=${orderId}`);
+        return;
+      }
+
       if (!orderId) {
         setError("No order was found for this invoice.");
         setLoading(false);
@@ -174,6 +187,12 @@ const InvoicePageInner = () => {
           if (res?.success && res?.data) {
             setOrder(res.data as Order);
           } else {
+            // Check if error is due to auth (token expired or invalid)
+            if (res?.message?.toLowerCase().includes("token") || res?.message?.toLowerCase().includes("unauthorized") || res?.message?.toLowerCase().includes("not authorized")) {
+              logout();
+              router.replace(`/login?redirect=/checkout/download-invoice?orderId=${orderId}`);
+              return;
+            }
             setError(res?.message || "Unable to load this invoice.");
           }
         } else {
@@ -474,15 +493,12 @@ const InvoicePageInner = () => {
                                         Shipping Charges:
                                       </p>
                                       <p className="text-[#111111] text-[16px] my-4">
-                                        Tax:
+                                        Platform Fee:
                                       </p>
                                     </td>
                                     <td className="border-y border-r border-[#ccc] text-[16px] leading-[1.55em] text-left text-[#111111]">
                                       <p className="text-[#111111] text-[16px] my-4 text-left">
-                                        {money(
-                                          order.itemsPrice +
-                                            (order.discountPrice || 0),
-                                        )}
+                                        {money(order.itemsPrice)}
                                       </p>
                                       <p className="text-[#111111] text-[16px] my-4 text-left">
                                         {order.discountPrice > 0
@@ -490,7 +506,10 @@ const InvoicePageInner = () => {
                                           : money(0)}
                                       </p>
                                       <p className="text-[#111111] text-[16px] my-4 text-left border-b border-gray-200 pb-2">
-                                        {money(order.itemsPrice)}
+                                        {money(
+                                          order.itemsPrice -
+                                            (order.discountPrice || 0),
+                                        )}
                                       </p>
                                       <p className="text-[#111111] text-[16px] my-4 text-left">
                                         {order.shippingPrice > 0
@@ -547,7 +566,7 @@ const InvoicePageInner = () => {
                               ))}
                             </p>
                             <p className="my-4">
-                              <strong>Email:</strong> Not available
+                              <strong>Email:</strong> {order.user.email}
                             </p>
                             <p className="my-4">
                               <strong>Phone no.:</strong>{" "}
@@ -571,7 +590,7 @@ const InvoicePageInner = () => {
                               ))}
                             </p>
                             <p className="my-4">
-                              <strong>Email:</strong> Not available
+                              <strong>Email:</strong> {order.user.email}
                             </p>
                             <p className="my-4">
                               <strong>Phone no.:</strong>{" "}

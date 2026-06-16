@@ -23,6 +23,29 @@ export interface FilterOptions {
 }
 
 /**
+ * Helper to normalize color names to Title Case for consistent grouping
+ */
+const normalizeColorName = (name: string) => {
+  if (!name) return "";
+  return name
+    .trim()
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+/**
+ * Helper to normalize size names for consistent grouping
+ */
+const normalizeSizeName = (name: string) => {
+  if (!name) return "";
+  const trimmed = name.trim();
+  if (trimmed.toLowerCase() === "free size") return "Free Size";
+  return trimmed.toUpperCase();
+};
+
+/**
  * Hook to extract intelligent filter options from products
  * Dynamically generates filters based on actual product data
  */
@@ -50,7 +73,7 @@ export const useProductFilters = (products: Product[]): FilterOptions => {
       product.variants?.forEach((variant) => {
         // Collect colors
         if (variant.color?.name && variant.color?.code) {
-          const colorName = variant.color.name;
+          const colorName = normalizeColorName(variant.color.name);
           const existing = colorMap.get(colorName);
           if (existing) {
             existing.count++;
@@ -65,7 +88,7 @@ export const useProductFilters = (products: Product[]): FilterOptions => {
         // Collect sizes and calculate prices
         variant.sizes?.forEach((size) => {
           if (size.name) {
-            sizeSet.add(size.name);
+            sizeSet.add(normalizeSizeName(size.name));
           }
 
           // Calculate effective price
@@ -154,15 +177,19 @@ export const useProductFilters = (products: Product[]): FilterOptions => {
       }
     });
 
-    // Sort sizes intelligently (numeric first, then alphabetic)
+    // Sort sizes intelligently (numeric first, then alphabetic, then Free Size)
     const sizes = Array.from(sizeSet).sort((a, b) => {
+      // Always put Free Size at the end
+      if (a === "Free Size") return 1;
+      if (b === "Free Size") return -1;
+
       const aNum = parseInt(a);
       const bNum = parseInt(b);
       if (!isNaN(aNum) && !isNaN(bNum)) {
         return aNum - bNum;
       }
       // Handle size labels like S, M, L, XL, XXL
-      const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+      const sizeOrder = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL"];
       const aIndex = sizeOrder.indexOf(a.toUpperCase());
       const bIndex = sizeOrder.indexOf(b.toUpperCase());
       if (aIndex !== -1 && bIndex !== -1) {

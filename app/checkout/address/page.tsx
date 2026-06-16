@@ -150,23 +150,25 @@ const AddressPageInner = () => {
       )
     : totalDiscount;
 
-  const activeFinalAmount = isBuyNow
+  const grossItemsTotal = isBuyNow
     ? normalizedActiveItems.reduce(
         (sum, i) => sum + (i.discountPrice || i.price) * i.quantity,
         0,
       )
-    : finalAmount;
+    : totalMrp - totalDiscount;
 
   const effectiveCouponCode = isBuyNow ? buyNowCouponCode : couponCode;
-  const effectiveCouponDiscount = isBuyNow ? buyNowCouponDiscount : couponDiscount;
+  const effectiveCouponDiscount = isBuyNow
+    ? buyNowCouponDiscount
+    : couponDiscount;
   const effectiveCouponError = isBuyNow ? buyNowCouponError : couponError;
   const effectiveBogoMessage = isBuyNow ? buyNowBogoMessage : bogoMessage;
   const effectiveApplicableCategories = isBuyNow
     ? buyNowApplicableCategories
     : applicableCategories;
-  const itemsAmountAfterCoupon = isBuyNow
-    ? Math.max(0, activeFinalAmount - effectiveCouponDiscount)
-    : activeFinalAmount;
+
+  const netItemsTotal = Math.max(0, grossItemsTotal - effectiveCouponDiscount);
+  const totalAmount = netItemsTotal + shippingCharges + platformFee;
 
   useEffect(() => {
     if (!isBuyNow) {
@@ -251,7 +253,7 @@ const AddressPageInner = () => {
         setFreeShippingThreshold(Number(settings.freeShippingThreshold) || 0);
 
         const threshold = Number(settings.freeShippingThreshold) || 0;
-        if (itemsAmountAfterCoupon > threshold && threshold > 0) {
+        if (netItemsTotal > threshold && threshold > 0) {
           setShippingCharges(0);
         } else {
           setShippingCharges(Number(settings.shippingFee) || 0);
@@ -261,15 +263,15 @@ const AddressPageInner = () => {
       }
     };
     fetchSettingsData();
-  }, [itemsAmountAfterCoupon]);
+  }, [netItemsTotal]);
 
   useEffect(() => {
-    if (itemsAmountAfterCoupon > freeShippingThreshold && freeShippingThreshold > 0) {
+    if (netItemsTotal > freeShippingThreshold && freeShippingThreshold > 0) {
       setShippingCharges(0);
     } else {
       setShippingCharges(baseShippingFee);
     }
-  }, [itemsAmountAfterCoupon, freeShippingThreshold, baseShippingFee]);
+  }, [netItemsTotal, freeShippingThreshold, baseShippingFee]);
 
   const handleEditAddress = (address: Address) => {
     setEditingAddress(address);
@@ -599,7 +601,7 @@ const AddressPageInner = () => {
       },
     }));
 
-    const totalAmount = itemsAmountAfterCoupon + shippingCharges + platformFee;
+    const totalPayable = netItemsTotal + shippingCharges + platformFee;
 
     try {
       setIsSubmitting(true);
@@ -610,10 +612,10 @@ const AddressPageInner = () => {
         orderItems,
         normalizedEmail,
         {
-          itemsPrice: activeFinalAmount,
+          itemsPrice: grossItemsTotal,
           shippingPrice: shippingCharges,
           taxPrice: platformFee,
-          totalPrice: totalAmount,
+          totalPrice: totalPayable,
         },
         isBuyNow ? normalizedActiveItems : undefined,
         isBuyNow ? undefined : normalizedActiveItems,
@@ -825,7 +827,7 @@ const AddressPageInner = () => {
               couponDiscount={effectiveCouponDiscount}
               shippingCharges={shippingCharges}
               platformFee={platformFee}
-              totalAmount={itemsAmountAfterCoupon + shippingCharges + platformFee}
+              totalAmount={totalAmount}
               hideProceedButton={true}
             />
 

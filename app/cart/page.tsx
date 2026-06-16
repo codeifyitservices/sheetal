@@ -113,6 +113,13 @@ const CartPage = () => {
     setIsModalOpen(true);
   };
 
+  const handleMoveToWishlistAction = (item: CartItem) => {
+    setIsBulkAction(false);
+    setModalAction("wishlist");
+    setItemToRemove(item);
+    setIsModalOpen(true);
+  };
+
   const confirmRemoveItem = async () => {
     if (isProcessing) return;
 
@@ -369,6 +376,7 @@ const CartPage = () => {
                 updateCartItemQuantity={updateCartItemQuantity}
                 onShareCart={handleShareCart}
                 handleRemoveItem={handleRemoveItem}
+                handleMoveToWishlistAction={handleMoveToWishlistAction}
                 isModalOpen={isModalOpen}
                 confirmRemoveItem={confirmRemoveItem}
                 cancelRemoveItem={cancelRemoveItem}

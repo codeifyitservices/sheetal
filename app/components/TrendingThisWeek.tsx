@@ -14,6 +14,7 @@ import { useWishlist } from "../hooks/useWishlist";
 import WishlistLoginModal from "./WishlistLoginModal";
 import { ArrowLeft } from "lucide-react";
 import { buildProductHref } from "../utils/productRoutes";
+import StarRating from "../product/components/StarRating";
 
 const MIN_FOR_CAROUSEL_DESKTOP = 5;
 const MIN_FOR_CAROUSEL_MOBILE = 2;
@@ -29,6 +30,7 @@ interface TrendingProduct {
   mrp: string;
   discount: string;
   soldOut: boolean;
+  rating: number;
 }
 
 function ProductCard({
@@ -112,16 +114,8 @@ function ProductCard({
         </h6>
 
         <div className="mt-auto">
-          <div className="mb-3 flex justify-center gap-0.5">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Image
-                key={i}
-                src="/assets/gray-star.png"
-                alt="star"
-                width={18}
-                height={18}
-              />
-            ))}
+          <div className="mb-3 flex justify-center">
+            <StarRating rating={product.rating} />
           </div>
 
           <div
@@ -249,6 +243,7 @@ const TrendingThisWeek = () => {
               mrp:      `₹ ${relatedMrp.toFixed(2)}`,
               discount: discountStr,
               soldOut:  isSoldOut,
+              rating:   p.averageRating || 0,
             };
           });
           setProducts(formatted);

@@ -22,6 +22,9 @@ const WishlistContent = () => {
   const router = useRouter();
   const [movingToCart, setMovingToCart] = useState<string | null>(null);
 
+  // We use a local state to optimistically hide moved items from the wishlist
+  const [optimisticRemovedIds, setOptimisticRemovedIds] = useState<Set<string>>(new Set());
+
   const handleMoveToCart = async (product: Product) => {
     if (movingToCart) return;
 
@@ -46,10 +49,17 @@ const WishlistContent = () => {
       product.mainImage?.url || "/assets/placeholder-product.jpg",
     );
 
+    // Snapshot for potential rollback
+    const productId = product._id;
+    
     try {
-      setMovingToCart(product._id);
+      setMovingToCart(productId);
+      
+      // Optimistically hide from wishlist
+      setOptimisticRemovedIds(prev => new Set(prev).add(productId));
+
       const cartResponse = await addToCartApi(
-        product._id,
+        productId,
         selectedVariant._id,
         1,
         selectedSize.name,
@@ -60,25 +70,35 @@ const WishlistContent = () => {
       );
 
       if (!cartResponse.success) {
+        // Rollback on cart failure
+        setOptimisticRemovedIds(prev => {
+          const next = new Set(prev);
+          next.delete(productId);
+          return next;
+        });
         toast.error(cartResponse.message || "Failed to move item to cart.");
         return;
       }
 
-      const wishlistResponse = await toggleWishlistApi(product._id);
-
-      if (!wishlistResponse.success) {
-        toast.error(
-          wishlistResponse.message ||
-            "Item added to cart, but could not remove it from wishlist.",
-        );
-        dispatchCartUpdated();
-        return;
-      }
+      // Sync backend wishlist (remove item)
+      // We don't wait for this to update UI since we already hid it optimistically
+      void toggleWishlistApi(productId).then((wishlistResponse) => {
+         if (wishlistResponse.success) {
+            dispatchWishlistUpdated();
+         } else {
+            console.error("Failed to remove from wishlist after cart add:", wishlistResponse.message);
+         }
+      });
 
       dispatchCartUpdated();
-      dispatchWishlistUpdated();
       toast.success("Item moved to cart!");
     } catch (error) {
+      // Rollback on network failure
+      setOptimisticRemovedIds(prev => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
       console.error("Failed to move wishlist item to cart:", error);
       toast.error("Could not move item to cart. Please try again.");
     } finally {
@@ -86,7 +106,9 @@ const WishlistContent = () => {
     }
   };
 
-  const processedWishlist = wishlist.map((p) => {
+  const processedWishlist = wishlist
+    .filter(p => !optimisticRemovedIds.has(p._id))
+    .map((p) => {
     let lowestPrice = Infinity;
     let lowestMrp = Infinity;
 

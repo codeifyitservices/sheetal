@@ -8,6 +8,7 @@ import { getNewArrivals, Product } from "@/app/services/productService";
 import { useWishlist } from "../hooks/useWishlist";
 import WishlistLoginModal from "./WishlistLoginModal";
 import { buildProductHref } from "@/app/utils/productRoutes";
+import StarRating from "../product/components/StarRating";
 
 const MIN_FOR_CAROUSEL = 5;
 
@@ -143,10 +144,8 @@ const NewArrivals = () => {
           </h6>
 
           <div className="mt-auto">
-            <div className="flex justify-center gap-0.5 mb-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Image key={i} src="/assets/gray-star.png" alt="star" width={16} height={16} />
-              ))}
+            <div className="flex justify-center mb-3">
+              <StarRating rating={product.averageRating || 0} />
             </div>
 
             <div

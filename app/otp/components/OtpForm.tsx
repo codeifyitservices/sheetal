@@ -192,6 +192,14 @@ const OtpForm = () => {
       const data = await verifyIdToken(idToken);
 
       if (data.success && data.token) {
+        if (data.user?.status === "Inactive") {
+          toast.error(
+            "This ID has been blocked by the admin due to some reasons, please contact the team for further procedures",
+            { duration: 6000 },
+          );
+          setLoading(false);
+          return;
+        }
         logAuthDebug("otp", "verify:success");
         login(data.token, data.user);
         sessionStorage.removeItem("otp_phone_number");

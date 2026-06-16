@@ -55,9 +55,15 @@ const commitWishlistSnapshot = (items: Product[]): Product[] => {
 export const useWishlist = (): UseWishlistReturn => {
   const router = useRouter();
   const [wishlist, setWishlist] = useState<Product[]>(() => getInitialWishlistSnapshot());
+  const [optimisticWishlistIds, setOptimisticWishlistIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // Sync optimistic set with actual wishlist whenever it changes
+  useEffect(() => {
+    setOptimisticWishlistIds(new Set(wishlist.map((p) => p._id)));
+  }, [wishlist]);
 
   const loadWishlist = useCallback(async (showLoader: boolean = true) => {
     if (showLoader) {
@@ -73,7 +79,6 @@ export const useWishlist = (): UseWishlistReturn => {
       }
     } catch (err: unknown) {
       const error = err as ErrorLike;
-      // Unauthenticated users get a 401 fetching wishlist. That is expected.
       if (isUnauthorized(error)) {
         setWishlist(commitWishlistSnapshot([]));
       } else {
@@ -91,37 +96,34 @@ export const useWishlist = (): UseWishlistReturn => {
     loadWishlist();
   }, [loadWishlist]);
 
-  useEffect(() => {
-    if (consumeRedirectModalState("wishlistLoginModalOpen")) {
-      setIsLoginModalOpen(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleWishlistUpdated = () => {
-      loadWishlist(false);
-    };
-
-    window.addEventListener(WISHLIST_UPDATED_EVENT, handleWishlistUpdated);
-
-    return () => {
-      window.removeEventListener(
-        WISHLIST_UPDATED_EVENT,
-        handleWishlistUpdated,
-      );
-    };
-  }, [loadWishlist]);
-
   const toggleProductInWishlist = useCallback(
     async (productId: string) => {
+      const isCurrentlyInWishlist = optimisticWishlistIds.has(productId);
+
+      // 1. Optimistically update set
+      setOptimisticWishlistIds((prev) => {
+        const next = new Set(prev);
+        if (isCurrentlyInWishlist) next.delete(productId);
+        else next.add(productId);
+        return next;
+      });
+
       try {
         const response = await toggleWishlistApi(productId);
         if (response.success) {
-          toast.success(response.message || "Wishlist updated!");
-          dispatchWishlistUpdated();
+          // Sync with server state
           await loadWishlist(false);
+          dispatchWishlistUpdated();
+          toast.success(response.message || "Wishlist updated!");
         } else {
-          // Some backends return HTTP 200 with success: false when not logged in
+          // Rollback on logic error
+          setOptimisticWishlistIds((prev) => {
+            const next = new Set(prev);
+            if (isCurrentlyInWishlist) next.add(productId);
+            else next.delete(productId);
+            return next;
+          });
+          
           const msg = response.message?.toLowerCase() || "";
           if (
             msg.includes("login") ||
@@ -134,8 +136,15 @@ export const useWishlist = (): UseWishlistReturn => {
           toast.error(response.message || "Failed to update wishlist.");
         }
       } catch (err: unknown) {
+        // Rollback on network error
+        setOptimisticWishlistIds((prev) => {
+            const next = new Set(prev);
+            if (isCurrentlyInWishlist) next.add(productId);
+            else next.delete(productId);
+            return next;
+          });
+        
         const error = err as ErrorLike;
-        // HTTP 401 thrown by axios / fetch wrapper
         if (isUnauthorized(error)) {
           setIsLoginModalOpen(true);
           return;
@@ -143,12 +152,12 @@ export const useWishlist = (): UseWishlistReturn => {
         toast.error("Could not update wishlist. Please try again.");
       }
     },
-    [loadWishlist],
+    [optimisticWishlistIds, loadWishlist],
   );
 
   const isProductInWishlist = useCallback(
-    (productId: string) => wishlist.some((p) => p._id === productId),
-    [wishlist],
+    (productId: string) => optimisticWishlistIds.has(productId),
+    [optimisticWishlistIds],
   );
 
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);

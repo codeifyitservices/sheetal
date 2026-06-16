@@ -24,7 +24,7 @@ const getPageNumber = (rawPage: string | string[] | undefined) => {
 const BlogsPage = async ({ searchParams }: BlogsPageProps) => {
   const resolvedSearchParams = (await searchParams) || {};
   const page = getPageNumber(resolvedSearchParams.page);
-  const response = await getBlogs({ page, limit: 9 });
+  const response = await getBlogs({ page, limit: 50 });
   const blogs: Blog[] = response.success ? response.blogs : [];
   const totalPages = response.success ? response.pages : 1;
 

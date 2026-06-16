@@ -110,7 +110,7 @@ const convertOldToNew = (old: RawFooterBlock[]): FooterBlock[] => {
   return [doubleBlock, singleBlock];
 };
 
-async function getFooterLayout(): Promise<FooterBlock[]> {
+async function getFooterData(): Promise<{ layout: FooterBlock[]; whatsapp?: string }> {
   try {
     const response = await fetch(`${API_BASE_URL}/settings`, {
       next: { revalidate: 300 },
@@ -118,35 +118,37 @@ async function getFooterLayout(): Promise<FooterBlock[]> {
     const settingsJson = await response.json();
     const settings = settingsJson?.data || {};
     const raw = (settings.footerLayout || []) as RawFooterBlock[];
+    const whatsapp = settings.supportWhatsapp;
 
     if (!Array.isArray(raw) || raw.length === 0) {
-      return defaultLayout;
+      return { layout: defaultLayout, whatsapp };
     }
 
     const hasNavbarStructure =
       raw[0].hasOwnProperty("isDroppable") ||
       raw[0].hasOwnProperty("children");
     if (hasNavbarStructure) {
-      return defaultLayout;
+      return { layout: defaultLayout, whatsapp };
     }
 
     if (isNewFormat(raw)) {
-      return raw;
+      return { layout: raw, whatsapp };
     }
 
     if (isOldFlatFormat(raw)) {
-      return convertOldToNew(raw);
+      return { layout: convertOldToNew(raw), whatsapp };
     }
 
-    return defaultLayout;
+    return { layout: defaultLayout, whatsapp };
   } catch {
-    return defaultLayout;
+    return { layout: defaultLayout };
   }
 }
 
 const Footer = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [layout, setLayout] = useState<FooterBlock[]>(defaultLayout);
+  const [whatsapp, setWhatsapp] = useState<string | undefined>();
 
   useEffect(() => {
     let isActive = true;
@@ -154,9 +156,10 @@ const Footer = () => {
     setIsMounted(true);
 
     const loadFooter = async () => {
-      const nextLayout = await getFooterLayout();
+      const data = await getFooterData();
       if (!isActive) return;
-      setLayout(nextLayout);
+      setLayout(data.layout);
+      setWhatsapp(data.whatsapp);
     };
 
     void loadFooter();
@@ -170,7 +173,7 @@ const Footer = () => {
     return <div className="mt-20 w-full bg-[#082722]" aria-hidden="true" />;
   }
 
-  return <FooterClient layout={layout} />;
+  return <FooterClient layout={layout} whatsapp={whatsapp} />;
 };
 
 export default Footer;

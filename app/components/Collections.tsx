@@ -11,6 +11,7 @@ import {
 import { useWishlist } from "../hooks/useWishlist";
 import WishlistLoginModal from "./WishlistLoginModal";
 import { buildProductHref } from "../utils/productRoutes";
+import StarRating from "../product/components/StarRating";
 
 const MIN_FOR_CAROUSEL_DESKTOP = 5;
 const MIN_FOR_CAROUSEL_MOBILE = 2;
@@ -293,16 +294,8 @@ function ProductCard({
         </h6>
 
         <div className="mt-auto">
-          <div className="mb-3 flex justify-center gap-0.5">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Image
-                key={i}
-                src="/assets/gray-star.png"
-                alt="star"
-                width={20}
-                height={20}
-              />
-            ))}
+          <div className="mb-3 flex justify-center">
+            <StarRating rating={product.averageRating || 0} />
           </div>
 
           <div className="mb-4 flex justify-center items-center gap-2 flex-wrap">
