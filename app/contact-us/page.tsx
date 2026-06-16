@@ -7,14 +7,6 @@ import Footer from "../components/Footer";
 import ContactUsForm from "./ContactUsForm";
 import { getSettings } from "../services/settingsService";
 
-const ContactUs = async () => {
-  const settings = await getSettings();
-  const supportEmail = settings?.supportEmail || "info@studiobysheetal.com";
-  const supportWhatsapp = settings?.supportWhatsapp || "919958813913";
-  const displayPhone = supportWhatsapp.startsWith("91") && supportWhatsapp.length === 12
-    ? `+91 ${supportWhatsapp.slice(2, 7)} ${supportWhatsapp.slice(7)}`
-    : supportWhatsapp;
-
 export const metadata: Metadata = {
   title: "Contact Us | Studio By Sheetal",
   description: "Get in touch with Studio By Sheetal. We are here to help you with your questions and concerns about our ethnic wear collections.",
@@ -22,6 +14,12 @@ export const metadata: Metadata = {
 };
 
 const ContactUs = async () => {
+  const settings = await getSettings();
+  const supportEmail = settings?.supportEmail || "info@studiobysheetal.com";
+  const supportWhatsapp = settings?.supportWhatsapp || "919958813913";
+  const displayPhone = supportWhatsapp.startsWith("91") && supportWhatsapp.length === 12
+    ? `+91 ${supportWhatsapp.slice(2, 7)} ${supportWhatsapp.slice(7)}`
+    : supportWhatsapp;
   return (
     <>
       <div className="container-fluid p-0 relative overflow-hidden md:mt-[75px] mb-5 text-center">

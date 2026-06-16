@@ -331,7 +331,7 @@ const AddressPageInner = () => {
     try {
       const response = await applyCouponApi(
         normalizedCode,
-        activeFinalAmount,
+        grossItemsTotal,
         userId,
         normalizedActiveItems,
       );
