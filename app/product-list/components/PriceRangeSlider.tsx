@@ -54,14 +54,20 @@ export const PriceRangeSlider: React.FC<PriceRangeSliderProps> = ({
   onChange,
 }) => {
   const stops = buildStops(min, max);
-  const totalSteps = stops.length - 1;
+  const totalSteps = Math.max(0, stops.length - 1);
 
   const [minIdx, setMinIdx] = useState(0);
   const [maxIdx, setMaxIdx] = useState(totalSteps);
+
+  // Sync state if stops change
+  useState(() => {
+    if (maxIdx > totalSteps) setMaxIdx(totalSteps);
+  });
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const minVal = stops[minIdx];
-  const maxVal = stops[maxIdx];
+  const minVal = stops[minIdx] ?? min;
+  const maxVal = stops[maxIdx] ?? max;
 
   const debouncedOnChange = (minV: number, maxV: number) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -70,18 +76,20 @@ export const PriceRangeSlider: React.FC<PriceRangeSliderProps> = ({
 
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const idx = Math.min(Number(e.target.value), maxIdx - 1);
-    setMinIdx(idx);
-    debouncedOnChange(stops[idx], maxVal);
+    const newMinIdx = Math.max(0, idx);
+    setMinIdx(newMinIdx);
+    debouncedOnChange(stops[newMinIdx] ?? min, maxVal);
   };
 
   const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const idx = Math.max(Number(e.target.value), minIdx + 1);
-    setMaxIdx(idx);
-    debouncedOnChange(minVal, stops[idx]);
+    const newMaxIdx = Math.min(totalSteps, idx);
+    setMaxIdx(newMaxIdx);
+    debouncedOnChange(minVal, stops[newMaxIdx] ?? max);
   };
 
-  const minPercent = (minIdx / totalSteps) * 100;
-  const maxPercent = (maxIdx / totalSteps) * 100;
+  const minPercent = totalSteps > 0 ? (minIdx / totalSteps) * 100 : 0;
+  const maxPercent = totalSteps > 0 ? (maxIdx / totalSteps) * 100 : 100;
 
   return (
     <>
@@ -124,14 +132,14 @@ export const PriceRangeSlider: React.FC<PriceRangeSliderProps> = ({
           <div className="flex flex-col items-start">
             <span className="text-[10px] uppercase tracking-widest text-gray-400 mb-0.5">Min</span>
             <span className="text-sm font-semibold text-gray-800">
-              ₹{minVal.toLocaleString("en-IN")}
+              ₹{(minVal ?? 0).toLocaleString("en-IN")}
             </span>
           </div>
           <div className="h-px w-6 bg-gray-300 mt-3" />
           <div className="flex flex-col items-end">
             <span className="text-[10px] uppercase tracking-widest text-gray-400 mb-0.5">Max</span>
             <span className="text-sm font-semibold text-gray-800">
-              ₹{maxVal.toLocaleString("en-IN")}
+              ₹{(maxVal ?? 0).toLocaleString("en-IN")}
             </span>
           </div>
         </div>

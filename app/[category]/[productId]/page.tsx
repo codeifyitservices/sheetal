@@ -5,6 +5,9 @@ import ProductDetailClient from "../../product/components/ProductDetailClient";
 import { fetchProductBySlug } from "../../services/productService";
 import { getApiImageUrl } from "../../services/api";
 import { buildProductHref, getProductCategorySlug } from "../../utils/productRoutes";
+import JsonLd from "../../components/JsonLd";
+import { getSeoSettings } from "../../services/seoSettingsService";
+import { buildProductSchema, parseSchemaString } from "../../utils/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +21,10 @@ export async function generateMetadata({
   const { productId } = await params;
 
   try {
-    const res = await fetchProductBySlug(productId);
+    const [res, seoSettings] = await Promise.all([
+      fetchProductBySlug(productId),
+      getSeoSettings(),
+    ]);
 
     if (!res.success || !res.data) {
       return {
@@ -30,7 +36,8 @@ export async function generateMetadata({
     const product = res.data;
     const canonicalPath = buildProductHref(product);
     const canonicalUrl =
-      product.canonicalUrl || `https://yourdomain.com${canonicalPath}`;
+      product.canonicalUrl ||
+      `${seoSettings.websiteUrl || "https://studiobysheetal.com"}${canonicalPath}`;
     const productPriceAmount =
       product.discountPrice && product.discountPrice > 0
         ? product.discountPrice
@@ -85,7 +92,8 @@ export async function generateMetadata({
         "product:price:currency": "INR",
         "product:availability": product.stock > 0 ? "in stock" : "out of stock",
         "product:condition": "new",
-        "product:brand": product.brandInfo || "Your Brand",
+        "product:brand":
+          product.brandInfo || seoSettings.organizationName || "Studio By Sheetal",
       },
     };
   } catch (error) {
@@ -128,50 +136,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
     permanentRedirect(buildProductHref(product));
   }
 
-  const price =
-    product?.discountPrice && product.discountPrice > 0
-      ? product.discountPrice
-      : product?.price;
-  const priceValidUntil = "2099-12-31";
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.shortDescription || product.description,
-    image: getApiImageUrl(product.mainImage?.url),
-    sku: product.sku,
-    brand: {
-      "@type": "Brand",
-      name: product.brandInfo || "Your Brand Name",
-    },
-    offers: {
-      "@type": "Offer",
-      price,
-      priceCurrency: "INR",
-      availability:
-        product.stock > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
-      url: `https://yourdomain.com${buildProductHref(product)}`,
-      priceValidUntil,
-    },
-    aggregateRating:
-      product.totalReviews > 0
-        ? {
-            "@type": "AggregateRating",
-            ratingValue: product.averageRating,
-            reviewCount: product.totalReviews,
-          }
-        : undefined,
-  };
+  const seoSettings = await getSeoSettings();
+  const structuredData =
+    parseSchemaString(product.schema) || buildProductSchema(product, seoSettings);
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
       <ProductDetailClient slug={productId} />
       <Footer />
     </>

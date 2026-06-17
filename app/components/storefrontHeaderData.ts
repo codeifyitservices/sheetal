@@ -50,6 +50,43 @@ const defaultHomepageSections: HomepageSections = {
 export const defaultHomepageSettings: HomepageSettings = {
   sections: defaultHomepageSections,
   topInfoConfig: defaultTopInfoConfig,
+  aboutSBS: {
+    heading: "",
+    subheading: "",
+    description: "",
+    buttonText: "",
+    buttonUrl: "",
+  },
+  hiddenBeauty: {
+    heading: "",
+    subheading: "",
+    categories: [],
+  },
+  collections: {
+    heading: "",
+    subheading: "",
+    products: [],
+  },
+  trendingThisWeek: {
+    heading: "",
+    subheading: "",
+    products: [],
+  },
+  newArrivals: {
+    heading: "",
+    subheading: "",
+    products: [],
+    buttonText: "",
+    buttonUrl: "",
+  },
+  instagramDiaries: {
+    heading: "",
+    subheading: "",
+  },
+  testimonials: {
+    heading: "",
+    subheading: "",
+  },
 };
 
 const fetchJson = async (path: string) => {
@@ -71,6 +108,7 @@ const getCachedHomepageSettings = unstable_cache(
     try {
       const settingsJson = await fetchJson("/homepage/sections");
       return {
+        ...defaultHomepageSettings,
         sections: {
           ...defaultHomepageSettings.sections,
           ...(settingsJson?.sections || {}),
@@ -79,6 +117,19 @@ const getCachedHomepageSettings = unstable_cache(
           ...defaultHomepageSettings.topInfoConfig,
           ...(settingsJson?.topInfoConfig || {}),
         },
+        aboutSBS: settingsJson?.aboutSBS || defaultHomepageSettings.aboutSBS,
+        hiddenBeauty: settingsJson?.hiddenBeauty || defaultHomepageSettings.hiddenBeauty,
+        collections: settingsJson?.collections || defaultHomepageSettings.collections,
+        trendingThisWeek: settingsJson?.trendingThisWeek || defaultHomepageSettings.trendingThisWeek,
+        newArrivals: settingsJson?.newArrivals || defaultHomepageSettings.newArrivals,
+        instagramDiaries: settingsJson?.instagramDiaries || defaultHomepageSettings.instagramDiaries,
+        testimonials: settingsJson?.testimonials || defaultHomepageSettings.testimonials,
+        metaTitle: settingsJson?.metaTitle,
+        metaDescription: settingsJson?.metaDescription,
+        metaKeywords: settingsJson?.metaKeywords,
+        canonicalUrl: settingsJson?.canonicalUrl,
+        ogImage: settingsJson?.ogImage,
+        schema: settingsJson?.schema,
       };
     } catch {
       return defaultHomepageSettings;

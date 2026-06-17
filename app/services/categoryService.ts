@@ -32,6 +32,7 @@ export interface Category {
   metaKeywords?: string;
   ogImage?: string;
   canonicalUrl?: string;
+  schema?: string;
   // rest of your existing fields
   categoryBanner?: string;
   isFeatured?: boolean;

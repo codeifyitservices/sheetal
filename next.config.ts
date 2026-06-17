@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
         hostname: "sheetal-assets.s3.ap-south-1.amazonaws.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "*.googleusercontent.com",
+        pathname: "/**",
+      },
     ],
   },
   async headers() {

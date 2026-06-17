@@ -10,6 +10,8 @@ import {
   Product,
 } from "../services/productService";
 
+import { InstagramDiariesContent } from "../services/homepageService";
+
 const INSTAGRAM_DIARIES_PRODUCT_LIMIT = 50;
 const MIN_FOR_CAROUSEL_DESKTOP = 5;
 const MIN_FOR_CAROUSEL_MOBILE = 2;
@@ -29,7 +31,12 @@ interface InstaCard {
   alt: string | null;
 }
 
-const InstagramDiaries = () => {
+const InstagramDiaries = ({ content }: { content?: InstagramDiariesContent }) => {
+  const {
+    heading = "Visit Our Instagram Diaries",
+    subheading = "Follow To Know More @sbsinstagram",
+  } = content || {};
+
   const [cards, setCards] = useState<InstaCard[]>(
     fallbackImages.map((url) => ({ url, link: INSTAGRAM_URL, alt: null })),
   );
@@ -127,16 +134,13 @@ const InstagramDiaries = () => {
         <div className="text-center mb-10 md:mb-4">
           <div className="flex items-center justify-center gap-6 w-full">
             <div className="h-[2px] bg-[#68400f] w-15 hidden md:flex" />
-            <h2 className="font-[family-name:var(--font-optima)] text-[#6a3f0e] whitespace-nowrap">
-              Visit Our Instagram Diaries
+            <h2 className="font-[family-name:var(--font-optima)] text-[#6a3f0e] whitespace-nowrap uppercase">
+              {heading}
             </h2>
             <div className="h-[2px] bg-[#68400f] w-15 hidden md:flex" />
           </div>
-          <p className="text-[#666] text-[15px] tracking-wide">
-            Follow To Know More{" "}
-            <a href="#" className="cursor-pointer underline">
-              @sbsinstagram
-            </a>
+          <p className="text-[#666] text-[15px] tracking-wide mt-2">
+            {subheading}
           </p>
         </div>
 

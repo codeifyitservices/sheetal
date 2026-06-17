@@ -19,16 +19,14 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
 }) => {
   if (!user) return null;
 
-  const profileImageSrc = getApiImageUrl(
-    user.profilePicture || "/assets/default-image.png",
-  );
+  const profileImageSrc = getApiImageUrl(user.profilePicture);
 
   return (
     <div className="col-lg-12">
       <div className="flex items-center space-x-4 mb-4">
         <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
           <Image
-            src={profileImageSrc}
+            src={profileImageSrc || "/assets/default-image.png"}
             alt="User Pic"
             width={64}
             height={64}

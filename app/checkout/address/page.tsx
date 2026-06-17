@@ -20,6 +20,8 @@ import { createCODOrder } from "../../services/orderService";
 import { useSearchParams } from "next/navigation";
 import { peekRedirectField, redirectToLogin } from "../../utils/authRedirect";
 import { getUserDetails, isAuthenticated } from "../../services/authService";
+import { useSettings } from "../../hooks/useSettings";
+import { getLogoUrl } from "../../services/settingsService";
 import { hasRedeemedCoupon, isSingleUseCoupon, markCouponRedeemed } from "../../utils/couponRedemption";
 import type { CartItem } from "../../hooks/useCart";
 import HideStorefrontHeader from "../../components/HideStorefrontHeader";
@@ -27,6 +29,8 @@ import HideStorefrontHeader from "../../components/HideStorefrontHeader";
 // ── Inner component that uses useSearchParams ─────────────────────────────
 const AddressPageInner = () => {
   const router = useRouter();
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
   const {
     cart,
     totalMrp,
@@ -689,7 +693,7 @@ const AddressPageInner = () => {
           <div className="flex items-center justify-between sm:justify-start">
             <Link href="/" className="cursor-pointer">
               <Image
-                src="/assets/335014072.png"
+                src={logoUrl}
                 alt="Studio By Sheetal"
                 width={40}
                 height={40}

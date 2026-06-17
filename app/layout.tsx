@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import StorefrontHeader from "./components/StorefrontHeader";
 import "./globals.css";
 import GlobalWidgets from "./components/GlobalWidgets";
+import JsonLd from "./components/JsonLd";
 
 const optima = localFont({
   src: [
@@ -52,13 +53,26 @@ const outfit = Outfit({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Studio By Sheetal",
-  description: "Made by Prableen Singh",
-  icons: {
-    icon: "/assets/335014072.png",
-  },
-};
+import { getSettings, getFaviconUrl } from "./services/settingsService";
+import { getSeoSettings } from "./services/seoSettingsService";
+import { buildGlobalSchema, parseSchemaString } from "./utils/schema";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  const seoSettings = await getSeoSettings();
+  const faviconUrl = getFaviconUrl(settings);
+  const title = seoSettings.websiteName || "Studio By Sheetal";
+  const description =
+    seoSettings.organizationDescription || "Studio By Sheetal";
+
+  return {
+    title,
+    description,
+    icons: {
+      icon: faviconUrl,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -67,11 +81,15 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const seoSettings = await getSeoSettings();
+  const globalSchema =
+    parseSchemaString(seoSettings.schema) || buildGlobalSchema(seoSettings);
+
   return (
     <html lang="en">
       <body
@@ -83,6 +101,7 @@ export default function RootLayout({
           } as CSSProperties
         }
       >
+        <JsonLd data={globalSchema} />
         <Toaster
           position="top-center"
           reverseOrder={false}

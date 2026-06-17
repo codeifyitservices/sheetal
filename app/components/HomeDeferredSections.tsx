@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import DeferredSection from "./DeferredSection";
-import type { HomepageSections } from "../services/homepageService";
+import type { HomepageSettings } from "../services/homepageService";
 
 const sectionShell = (className: string) => () => (
   <div className={className}>
@@ -25,10 +25,13 @@ const Collections = dynamic(() => import("./Collections"), {
   ssr: false,
   loading: sectionShell("px-4 py-12 lg:px-20"),
 });
-const TimelessWomenCollection = dynamic(() => import("./TimelessWomenCollection"), {
-  ssr: false,
-  loading: sectionShell("px-4 py-12"),
-});
+const TimelessWomenCollection = dynamic(
+  () => import("./TimelessWomenCollection"),
+  {
+    ssr: false,
+    loading: sectionShell("px-4 py-12"),
+  },
+);
 const InstagramDiaries = dynamic(() => import("./InstagramDiaries"), {
   ssr: false,
   loading: sectionShell("px-4 py-12 lg:px-20"),
@@ -42,26 +45,23 @@ const Blogs = dynamic(() => import("./Blogs"), {
   loading: sectionShell("px-4 py-12"),
 });
 
-const HomeDeferredSections = ({
-  sections,
-}: {
-  sections: HomepageSections | null;
-}) => {
+const HomeDeferredSections = ({ settings }: { settings: HomepageSettings }) => {
+  const { sections } = settings;
   return (
     <>
       {sections?.trendingThisWeek && (
         <DeferredSection fallback={sectionShell("px-4 py-12 lg:px-20")()}>
-          <TrendingThisWeek />
+          <TrendingThisWeek content={settings.trendingThisWeek} />
         </DeferredSection>
       )}
       {sections?.newArrivals && (
         <DeferredSection fallback={sectionShell("px-4 py-12 lg:px-20")()}>
-          <NewArrivals />
+          <NewArrivals content={settings.newArrivals} />
         </DeferredSection>
       )}
       {sections?.collections && (
         <DeferredSection fallback={sectionShell("px-4 py-12 lg:px-20")()}>
-          <Collections />
+          <Collections content={settings.collections} />
         </DeferredSection>
       )}
       {sections?.timelessWomenCollection && (
@@ -71,12 +71,12 @@ const HomeDeferredSections = ({
       )}
       {sections?.instagramDiaries && (
         <DeferredSection fallback={sectionShell("px-4 py-12 lg:px-20")()}>
-          <InstagramDiaries />
+          <InstagramDiaries content={settings.instagramDiaries} />
         </DeferredSection>
       )}
       {sections?.testimonials && (
         <DeferredSection fallback={sectionShell("px-4 py-12")()}>
-          <Testimonials />
+          <Testimonials content={settings.testimonials} />
         </DeferredSection>
       )}
       {sections?.blogs && (

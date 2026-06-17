@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSettings } from "../hooks/useSettings";
+import { getLogoUrl } from "../services/settingsService";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { createSubscriber } from "../services/newsletterServices";
@@ -61,6 +63,9 @@ const FooterClient = ({
   layout: FooterBlock[];
   whatsapp?: string;
 }) => {
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
+
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const pathname = usePathname();
   const showBackToTop = pathname !== "/";
@@ -104,11 +109,11 @@ const FooterClient = ({
             <div className="flex flex-col items-center px-2 text-center md:border-r sm:px-4 lg:text-left">
               <Link href="/" className="mb-4">
                 <Image
-                  src="/assets/625030871.png"
+                  src={logoUrl}
                   alt="Studio By Sheetal"
-                  width={280}
-                  height={140}
-                  className="lg:mx-0"
+                  width={180}
+                  height={100}
+                  className="lg:mx-0 h-30 w-auto"
                 />
               </Link>
               <div className="flex justify-center gap-3 text-[#f8f0b6]">

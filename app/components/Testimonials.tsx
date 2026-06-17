@@ -5,6 +5,8 @@ import Image from "next/image";
 
 import { API_BASE_URL } from "../services/api";
 
+import { TestimonialsContent } from "../services/homepageService";
+
 const fallbackTestimonials = [
   {
     _id: "1",
@@ -22,7 +24,12 @@ const fallbackTestimonials = [
   },
 ];
 
-const Testimonials = () => {
+const Testimonials = ({ content }: { content?: TestimonialsContent }) => {
+  const {
+    heading = "What Our Customers Have To Say",
+    subheading = "Your words",
+  } = content || {};
+
   const [testimonials, setTestimonials] = useState(fallbackTestimonials);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -56,10 +63,10 @@ const Testimonials = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-center">
           <div className="lg:col-span-4 lg:border-r border-gray-300 pr-0 lg:pr-12 text-center md:text-left mb-10 lg:mb-0">
             <p className="text-[#a2690f] font-[family-name:var(--font-montserrat)] text-center md:text-left text-[26px] tracking-wider text-sm font-normal mb-3">
-              Your words
+              {subheading}
             </p>
-            <h2 className="text-[26px] lg:text-[40px] text-center md:text-left text-[#6a3f07] leading-tight font-[family-name:var(--font-optima)]">
-              What Our Customers Have To Say
+            <h2 className="text-[26px] lg:text-[40px] text-center md:text-left text-[#6a3f07] leading-tight font-[family-name:var(--font-optima)] uppercase">
+              {heading}
             </h2>
           </div>
 

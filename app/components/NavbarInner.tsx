@@ -33,6 +33,8 @@ import {
   CartItemAddedDetail,
   WISHLIST_UPDATED_EVENT,
 } from "../hooks/shopEvents";
+import { useSettings } from "../hooks/useSettings";
+import { getLogoUrl } from "../services/settingsService";
 
 const SearchModal = dynamic(() => import("./SearchModal"), {
   ssr: false,
@@ -131,6 +133,9 @@ const DynamicMegaMenu = ({
   category: Partial<Category>;
   handleCloseMegaMenu: () => void;
 }) => {
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
+
   const tagGroups = [
     { title: "Sub Categories", items: category.subCategories, type: "subCategory" },
     { title: "By Occasion", items: category.occasion, type: "occasion" },
@@ -244,7 +249,7 @@ const DynamicMegaMenu = ({
             ) : (
               <div className="col-span-2 flex items-center justify-center h-[250px] bg-white rounded-lg border border-gray-100">
                 <Image
-                  src="/assets/625030871.png"
+                  src={logoUrl}
                   alt="Sheetal"
                   width={180}
                   height={120}
@@ -727,6 +732,8 @@ const NavbarInner = ({
   initialNavItems: NavbarNavItem[];
   topInfoEnabled: boolean;
 }) => {
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1044,7 +1051,7 @@ const NavbarInner = ({
           <div className="flex justify-between items-center w-full h-full gap-6">
             <Link href="/" className="inline-block shrink-0">
               <Image
-                src="/assets/335014072.png"
+                src={logoUrl}
                 alt="Studio By Sheetal"
                 width={150}
                 height={50}
@@ -1185,7 +1192,7 @@ const NavbarInner = ({
       >
         <div className="container mx-auto px-4 flex justify-between items-center h-[50px]">
           <Link href="/" className="inline-block">
-            <Image src="/assets/625030871.png" alt="Studio By Sheetal" width={120} height={40} className="h-[40px] w-auto" />
+            <Image src={logoUrl} alt="Studio By Sheetal" width={120} height={40} className="h-[40px] w-auto" />
           </Link>
 
           <div className="flex items-center gap-4">
@@ -1202,7 +1209,7 @@ const NavbarInner = ({
               getDisplayName={getDisplayName}
             />
             <Link href="/cart" className="relative">
-              <Image src="/assets/icons/shopping-bag.svg" alt="Cart" width={24} height={24} className="w-6 h-6" />
+              <Image src="/assets/icons/shopping-bag.svg" alt="Cart" width={24} height={24} className="w-6 h-6 font-bold" />
               {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-[#955300] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
                   {cartItemCount}

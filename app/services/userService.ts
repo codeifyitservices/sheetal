@@ -65,3 +65,9 @@ export const setDefaultAddress = async (addressId: string) => {
     method: "PUT",
   });
 };
+
+export const deleteAccount = async () => {
+  return await apiFetch("/users/me", {
+    method: "DELETE",
+  });
+};

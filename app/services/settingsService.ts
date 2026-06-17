@@ -24,6 +24,13 @@ interface Settings {
   deliveryPoint2?: string;
   deliveryPoint3?: string;
   platformFeeKnowMore?: string;
+  logo?: {
+    url: string;
+    uploadDate?: string;
+    dimensions?: { width: number; height: number };
+  };
+  favicon?: string;
+  logoHistory?: any[];
 }
 
 export const getSettings = async (): Promise<Settings> => {
@@ -46,4 +53,12 @@ export const getSettings = async (): Promise<Settings> => {
     deliveryPoint2: "Pay on delivery available",
     deliveryPoint3: "Easy 7 days return & exchange available",
   };
+};
+
+export const getLogoUrl = (settings: Settings | null): string => {
+  return settings?.logo?.url || "/assets/335014072.png";
+};
+
+export const getFaviconUrl = (settings: Settings | null): string => {
+  return settings?.favicon || "/assets/335014072.png";
 };

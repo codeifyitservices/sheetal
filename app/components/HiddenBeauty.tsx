@@ -7,14 +7,33 @@ import Link from "next/link";
 import { useCategories } from "../hooks/useCategories";
 import { getCategoryImageUrl } from "../services/categoryService";
 
-const HiddenBeauty = () => {
+import { HiddenBeautyContent } from "../services/homepageService";
+
+const HiddenBeauty = ({ content }: { content?: HiddenBeautyContent }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "start",
     dragFree: false,
   });
 
-  const { categories, loading, error } = useCategories();
+  const {
+    categories: propCategories = [],
+    heading = "Bring Out The Hidden Beauty",
+    subheading = "Designer pieces that blend traditional charm with modern silhouettes for every occasion.",
+  } = content || {};
+
+  const {
+    categories: allCategories,
+    loading: categoriesLoading,
+    error,
+  } = useCategories();
+
+  // Use prop categories if available, otherwise fallback to all categories
+  const categories =
+    propCategories && propCategories.length > 0
+      ? propCategories
+      : allCategories;
+  const loading = propCategories && propCategories.length > 0 ? false : categoriesLoading;
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -29,9 +48,7 @@ const HiddenBeauty = () => {
     return (
       <div className="flex gap-8 items-center justify-center">
         <div className="hidden md:block h-[1px] bg-[#a2690f] w-15" />
-        <h2 className="font-light text-[#6a3f07]">
-          Bring Out The Hidden Beauty
-        </h2>
+        <h2 className="font-light text-[#6a3f07]">{heading}</h2>
         <div className="hidden md:block h-[1px] bg-[#a2690f] w-15" />
       </div>
     );
@@ -43,14 +60,11 @@ const HiddenBeauty = () => {
       <div className="container mx-auto py-12 px-4 text-center font-[family-name:var(--font-optima)]">
         <div className="flex gap-8 items-center justify-center">
           <div className="hidden md:block h-[1px] bg-[#a2690f] w-15" />
-          <h2 className="font-light text-[#6a3f07]">
-            Bring Out The Hidden Beauty
-          </h2>
+          <h2 className="font-light text-[#6a3f07]">{heading}</h2>
           <div className="hidden md:block h-[1px] bg-[#a2690f] w-15" />
         </div>
         <p className=" mx-auto text-[12px] lg:text-[15px] mb-8 text-[#a2690f]">
-          Designer pieces that blend traditional charm with modern silhouettes
-          for every occasion.
+          {subheading}
         </p>
         <div className="flex flex-col justify-center items-center h-[400px] text-center">
           <div className="w-20 h-20 bg-[#f9f9f9] rounded-full flex items-center justify-center mb-6 shadow-inner">
@@ -84,14 +98,11 @@ const HiddenBeauty = () => {
     <div className="container mx-auto px-4 pb-10 sm:px-6 md:pb-12 lg:px-12 text-center font-[family-name:var(--font-optima)]">
       <div className="flex gap-8 items-center justify-center">
         <div className="hidden md:block h-[2px] bg-[#a2690f] w-15" />
-        <h2 className="font-optima font-light text-[#6a3f07]">
-          Bring Out The Hidden Beauty
-        </h2>
+        <h2 className="font-optima font-light text-[#6a3f07]">{heading}</h2>
         <div className="hidden md:block h-[2px] bg-[#a2690f] w-15" />
       </div>
       <p className="mx-auto mb-10 max-w-3xl text-[12px] text-black font-[family-name:var(--font-montserrat)] lg:mb-16 lg:text-[15px]">
-        Designer pieces that blend traditional charm with modern silhouettes for
-        every occasion.
+        {subheading}
       </p>
 
       {/* Embla Wrapper */}

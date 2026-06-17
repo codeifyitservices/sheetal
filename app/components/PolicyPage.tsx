@@ -2,6 +2,10 @@ import React from "react";
 import Link from "next/link";
 import Footer from "./Footer";
 import { API_BASE_URL } from "../services/api";
+import JsonLd from "./JsonLd";
+import { getSeoSettings } from "../services/seoSettingsService";
+import { buildPageSchema, parseSchemaString } from "../utils/schema";
+import type { Metadata } from "next";
 
 interface PolicyPageProps {
   slug: string;
@@ -10,6 +14,13 @@ interface PolicyPageProps {
 interface PageData {
   title: string;
   content: string;
+  slug?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  schema?: string;
 }
 
 const pageDefaults: Record<string, { title: string; content: string }> = {
@@ -31,7 +42,7 @@ const pageDefaults: Record<string, { title: string; content: string }> = {
   },
 };
 
-async function getPageData(slug: string): Promise<PageData | null> {
+export async function getPageData(slug: string): Promise<PageData | null> {
   try {
     const res = await fetch(`${API_BASE_URL}/pages/slug/${slug}`, {
       cache: "no-store",
@@ -43,8 +54,51 @@ async function getPageData(slug: string): Promise<PageData | null> {
   }
 }
 
+export async function getPolicyMetadata(slug: string): Promise<Metadata> {
+  const [data, seoSettings] = await Promise.all([
+    getPageData(slug),
+    getSeoSettings(),
+  ]);
+
+  const fallback =
+    pageDefaults[slug] || {
+      title: slug
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
+      content: "",
+    };
+
+  const title = data?.metaTitle || data?.title || fallback.title;
+  const description =
+    data?.metaDescription ||
+    `Read the ${fallback.title} of ${seoSettings.websiteName || "Studio By Sheetal"}`;
+  const canonical =
+    data?.canonicalUrl ||
+    `${seoSettings.websiteUrl || "https://studiobysheetal.com"}/${slug}`;
+
+  return {
+    title,
+    description,
+    keywords: data?.metaKeywords || "",
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      images: data?.ogImage ? [{ url: data.ogImage, alt: title }] : [],
+      type: "website",
+    },
+  };
+}
+
 const PolicyPage = async ({ slug }: PolicyPageProps) => {
-  const data = await getPageData(slug);
+  const [data, seoSettings] = await Promise.all([
+    getPageData(slug),
+    getSeoSettings(),
+  ]);
   const fallback =
     pageDefaults[slug] || {
       title: slug
@@ -52,12 +106,24 @@ const PolicyPage = async ({ slug }: PolicyPageProps) => {
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" "),
       content: "<p>Page content is being updated. Please check back later.</p>",
-    };
+  };
   const title = data?.title || fallback.title;
   const htmlContent = data?.content || fallback.content;
+  const schema =
+    parseSchemaString(data?.schema) ||
+    buildPageSchema(
+      {
+        ...data,
+        title,
+        slug,
+        content: htmlContent,
+      },
+      seoSettings,
+    );
 
   return (
     <>
+      <JsonLd data={schema} />
       <div className="container-fluid p-0 relative overflow-hidden md:mt-[75px] mb-[45px] text-center">
         <div className="relative py-12 bg-[#f9f6f0] border-b border-[#e9e0d1]">
           <div className="max-w-4xl mx-auto px-4">

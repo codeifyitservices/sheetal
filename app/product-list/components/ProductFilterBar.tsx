@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { FilterOptions } from "../../hooks/useProductFilters";
 import { PriceRangeSlider } from "./PriceRangeSlider";
@@ -44,6 +44,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
   currentSort = "newest",
 }) => {
   const [openSections, setOpenSections] = useState<string[]>([]);
+  const sortByRef = useRef<HTMLDivElement>(null);
 
   const isFilterSelected = (type: string, value: string) =>
     activeFilters.some((filter) => filter.type === type && filter.value === value);
@@ -61,35 +62,38 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
     toggleSortBy();
   };
 
-  // Compute subcategories to display based on ALL selected categories
-  const computedSubCategories = (() => {
-    const isCategoryPage = filterOptions.categories?.length <= 1;
-    const selectedCategoryFilters = activeFilters.filter((f) => f.type === "category");
-    let displayedSubCategories = filterOptions.subCategories || [];
+  const closeSortByIfOpen = () => {
+    if (sortByOpen) toggleSortBy();
+  };
 
-    if (isCategoryPage) {
-      return displayedSubCategories;
-    } else if (selectedCategoryFilters.length > 0) {
-      const allowedSubCategories = new Set<string>();
-      selectedCategoryFilters.forEach((selectedFilter) => {
-        const catInfo = filterOptions.categories?.find(
-          (c) => c.label === selectedFilter.value,
-        );
-        if (catInfo) {
-          catInfo.subCategories.forEach((sc) => allowedSubCategories.add(sc));
-        }
-      });
-      return displayedSubCategories.filter((sc) =>
-        allowedSubCategories.has(sc.label),
-      );
-    }
-    return [];
-  })();
+  const handleToggleFilters = () => {
+    closeSortByIfOpen();
+    toggleFilters();
+  };
+
+  const handleSetViewMode = (mode: "grid" | "list") => {
+    closeSortByIfOpen();
+    setViewMode(mode);
+  };
+
+  // Close Sort By dropdown when clicking anywhere outside of it
+  useEffect(() => {
+    if (!sortByOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortByRef.current && !sortByRef.current.contains(event.target as Node)) {
+        toggleSortBy();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [sortByOpen, toggleSortBy]);
 
   const showSubCategory =
-    filterOptions.categories?.length <= 1
-      ? computedSubCategories.length > 0
-      : activeFilters.some((f) => f.type === "category") && computedSubCategories.length > 0;
+    (filterOptions.categories?.length <= 1 ||
+      activeFilters.some((f) => f.type === "category")) &&
+    filterOptions.subCategories.length > 0;
 
   const AccordionChevron = ({ section }: { section: string }) => (
     <svg
@@ -175,7 +179,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
         <div className="flex items-center justify-between w-full">
           {/* Left: Filters button */}
           <button
-            onClick={toggleFilters}
+            onClick={handleToggleFilters}
             className="flex items-center gap-2 text-md font-[family-name:var(--font-montserrat)] font-normal tracking-wider hover:text-[#bd9951] transition-colors cursor-pointer shrink-0"
           >
             <Image src="/assets/icons/filter.svg" alt="Filter" width={20} height={20} />
@@ -183,7 +187,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
           </button>
 
           {/* Center: Sort By */}
-          <div className="relative">
+          <div className="relative" ref={sortByRef}>
             <button
               onClick={toggleSortBy}
               className="flex cursor-pointer font-[family-name:var(--font-montserrat)] items-center gap-2 text-md font-medium tracking-normal hover:text-[#bd9951] transition-colors"
@@ -234,13 +238,13 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
           {/* Right: View Mode toggles */}
           <div className="flex items-center gap-3 border-l border-gray-200 pl-6 shrink-0">
             <button
-              onClick={() => setViewMode("grid")}
+              onClick={() => handleSetViewMode("grid")}
               className={`transition-opacity cursor-pointer ${viewMode === "grid" ? "opacity-100" : "opacity-40 hover:opacity-100"}`}
             >
               <Image src="/assets/icons/grid.svg" alt="Grid" width={18} height={18} />
             </button>
             <button
-              onClick={() => setViewMode("list")}
+              onClick={() => handleSetViewMode("list")}
               className={`transition-opacity cursor-pointer ${viewMode === "list" ? "opacity-100" : "opacity-40 hover:opacity-100"}`}
             >
               <Image src="/assets/icons/list.svg" alt="List" width={18} height={18} />
@@ -319,7 +323,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
             {/* Sub Category — shown when ≥1 category selected; merges all their subcategories */}
             {showSubCategory && (
               <FilterSection id="subCategory" title="Sub Category">
-                {computedSubCategories.map((item, idx) => (
+                {filterOptions.subCategories.map((item, idx) => (
                   <CheckboxRow
                     key={idx}
                     id={`f-subCategory-${idx}`}
@@ -383,7 +387,11 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
                 >
                   <PriceRangeSlider
                     min={filterOptions.priceRanges[0]?.min ?? 0}
-                    max={filterOptions.priceRanges[filterOptions.priceRanges.length - 1]?.max ?? 10000}
+                    max={
+                      filterOptions.priceRanges[filterOptions.priceRanges.length - 1]?.max === Infinity
+                        ? (filterOptions.priceRanges[filterOptions.priceRanges.length - 1]?.min ?? 0) + 10000
+                        : (filterOptions.priceRanges[filterOptions.priceRanges.length - 1]?.max ?? 10000)
+                    }
                     onChange={(min: number, max: number) =>
                       onFilterChange("price", `${min}-${max}`)
                     }

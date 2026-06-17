@@ -8,6 +8,8 @@ import {
   dispatchCartUpdated,
   dispatchOrderConfirmed,
 } from "../../hooks/shopEvents";
+import { useSettings } from "../../hooks/useSettings";
+import { getLogoUrl } from "../../services/settingsService";
 import { verifyRazorpayPayment } from "../../services/paymentService";
 import HideStorefrontHeader from "../../components/HideStorefrontHeader";
 
@@ -64,6 +66,8 @@ const StatusShell = ({
 );
 
 const SuccessContent = () => {
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
   const searchParams = useSearchParams();
   const hasFinalizedRef = useRef(false);
 
@@ -309,7 +313,7 @@ const SuccessContent = () => {
             <div className="mt-6 hidden items-center gap-4 rounded-[24px] border border-[#eadfce] bg-white/70 px-5 py-4 shadow-[0_20px_50px_rgba(63,44,13,0.05)] backdrop-blur-sm sm:flex">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[20px] bg-[#f5eee1]">
                 <Image
-                  src="/assets/335014072.png"
+                  src={logoUrl}
                   alt="Studio By Sheetal"
                   fill
                   className="object-contain p-3"

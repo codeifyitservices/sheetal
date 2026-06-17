@@ -12,9 +12,9 @@ import {
 import { getApiImageUrl } from "../services/api";
 import { useWishlist } from "../hooks/useWishlist";
 import WishlistLoginModal from "./WishlistLoginModal";
-import { ArrowLeft } from "lucide-react";
 import { buildProductHref } from "../utils/productRoutes";
 import StarRating from "../product/components/StarRating";
+import { TrendingThisWeekContent } from "../services/homepageService";
 
 const MIN_FOR_CAROUSEL_DESKTOP = 5;
 const MIN_FOR_CAROUSEL_MOBILE = 2;
@@ -153,10 +153,21 @@ function ProductCard({
   );
 }
 
-const TrendingThisWeek = () => {
+const TrendingThisWeek = ({
+  content,
+}: {
+  content?: TrendingThisWeekContent;
+}) => {
   const [products, setProducts] = useState<TrendingProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCarousel, setIsCarousel] = useState(false);
+
+  const {
+    heading = "Trending This Week",
+    subheading = "Best-Selling Gems: Signature sarees, ensembles, and Indo-Western pieces that define Studio By Sheetal.",
+    products: propProducts = [],
+  } = content || {};
+
   const {
     wishlist,
     toggleProductInWishlist,
@@ -190,62 +201,71 @@ const TrendingThisWeek = () => {
     return () => window.removeEventListener("resize", update);
   }, [products]);
 
+  const formatProduct = (p: Product): TrendingProduct => {
+    let minPrice = Infinity;
+    let relatedMrp = 0;
+
+    p.variants?.forEach((v: any) => {
+      v.sizes?.forEach((s: any) => {
+        const effective =
+          s.discountPrice && s.discountPrice > 0 ? s.discountPrice : s.price;
+        if (effective < minPrice) {
+          minPrice = effective;
+          relatedMrp = s.price;
+        }
+      });
+    });
+
+    if (minPrice === Infinity) {
+      minPrice = 0;
+      relatedMrp = 0;
+    }
+
+    const discountStr =
+      minPrice > 0 && relatedMrp > minPrice
+        ? `${Math.round(((relatedMrp - minPrice) / relatedMrp) * 100)}% OFF`
+        : "";
+
+    const validVariants = p.variants?.filter((v: any) =>
+      v.sizes?.some((s: any) => s.stock > 0),
+    );
+    const isSoldOut =
+      !validVariants || validVariants.length === 0 || p.stock <= 0;
+
+    return {
+      id: p.slug,
+      productId: p._id,
+      categorySlug: p.category?.slug,
+      name: p.name,
+      image: getProductImageUrl(p),
+      hoverImage: p.hoverImage?.url
+        ? getApiImageUrl(p.hoverImage.url)
+        : getProductImageUrl(p),
+      price: `₹ ${minPrice.toFixed(2)}`,
+      mrp: `₹ ${relatedMrp.toFixed(2)}`,
+      discount: discountStr,
+      soldOut: isSoldOut,
+      rating: p.averageRating || 0,
+    };
+  };
+
   useEffect(() => {
     const loadTrending = async () => {
+      if (propProducts && propProducts.length > 0) {
+        setProducts(propProducts.map(formatProduct));
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetchTrendingProducts();
         if (res.success && res.data) {
           const visibleProducts = res.data.filter(
             (p: Product) =>
-              Boolean(
-                p &&
-                  p._id &&
-                  p.slug &&
-                  p.name &&
-                  p.status === "Active",
-              ),
+              Boolean(p && p._id && p.slug && p.name && p.status === "Active"),
           );
 
-          const formatted: TrendingProduct[] = visibleProducts.map((p: Product) => {
-            let minPrice = Infinity;
-            let relatedMrp = 0;
-
-            p.variants?.forEach((v: any) => {
-              v.sizes?.forEach((s: any) => {
-                const effective =
-                  s.discountPrice && s.discountPrice > 0 ? s.discountPrice : s.price;
-                if (effective < minPrice) { minPrice = effective; relatedMrp = s.price; }
-              });
-            });
-
-            if (minPrice === Infinity) { minPrice = 0; relatedMrp = 0; }
-
-            const discountStr =
-              minPrice > 0 && relatedMrp > minPrice
-                ? `${Math.round(((relatedMrp - minPrice) / relatedMrp) * 100)}% OFF`
-                : "";
-
-            const validVariants = p.variants?.filter((v: any) =>
-              v.sizes?.some((s: any) => s.stock > 0),
-            );
-            const isSoldOut = !validVariants || validVariants.length === 0 || p.stock <= 0;
-
-            return {
-              id:         p.slug,
-              productId:  p._id,
-              categorySlug: p.category?.slug,
-              name:       p.name,
-              image:      getProductImageUrl(p),
-              hoverImage: p.hoverImage?.url
-                ? getApiImageUrl(p.hoverImage.url)
-                : getProductImageUrl(p),
-              price:    `₹ ${minPrice.toFixed(2)}`,
-              mrp:      `₹ ${relatedMrp.toFixed(2)}`,
-              discount: discountStr,
-              soldOut:  isSoldOut,
-              rating:   p.averageRating || 0,
-            };
-          });
+          const formatted = visibleProducts.map(formatProduct);
           setProducts(formatted);
         } else {
           setProducts([]);
@@ -257,7 +277,7 @@ const TrendingThisWeek = () => {
       }
     };
     loadTrending();
-  }, []);
+  }, [propProducts]);
 
   if (loading) return null;
   if (products.length === 0) return null;
@@ -265,7 +285,10 @@ const TrendingThisWeek = () => {
   return (
     <div
       className="container-fluid px-4 py-10 sm:px-6 md:py-12 lg:px-20 home-page-product font-[family-name:var(--font-montserrat)]"
-      style={{ backgroundImage: "url('/assets/650465765.png')", backgroundSize: "cover" }}
+      style={{
+        backgroundImage: "url('/assets/650465765.png')",
+        backgroundSize: "cover",
+      }}
     >
       <div className="container mx-auto px-0 md:px-4 py-6 md:py-10">
         {/* Heading */}
@@ -273,13 +296,12 @@ const TrendingThisWeek = () => {
           <div className="flex items-center justify-center gap-10 w-full">
             <div className="h-[2px] w-15 bg-[#68400f] hidden md:block" />
             <h2 className="text-[26px] lg:text-[30px] font-normal text-[#6a3f07] whitespace-nowrap font-[family-name:var(--font-optima)]">
-              Trending This Week
+              {heading}
             </h2>
             <div className="h-[2px] w-15 bg-[#68400f] hidden md:block" />
           </div>
           <p className="mt-1 mb-6 px-2 text-center text-[15px] font-[family-name:var(--font-montserrat)] md:px-0">
-            Best-Selling Gems: Signature sarees, ensembles, and Indo-Western
-            pieces that define Studio By Sheetal.
+            {subheading}
           </p>
         </div>
 
@@ -295,7 +317,9 @@ const TrendingThisWeek = () => {
                   >
                     <ProductCard
                       product={product}
-                      isWishlisted={wishlist.some((p) => p._id === product.productId)}
+                      isWishlisted={wishlist.some(
+                        (p) => p._id === product.productId,
+                      )}
                       onToggleWishlist={toggleProductInWishlist}
                     />
                   </div>
@@ -308,14 +332,26 @@ const TrendingThisWeek = () => {
               aria-label="Previous product"
               className="absolute left-[-50px] cursor-pointer bottom-[40%] -translate-y-1/2 w-12 h-12 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 z-10"
             >
-              <Image src="/assets/left-image.png" alt="Previous" width={48} height={48} className="w-full h-auto" />
+              <Image
+                src="/assets/left-image.png"
+                alt="Previous"
+                width={48}
+                height={48}
+                className="w-full h-auto"
+              />
             </button>
             <button
               onClick={scrollNext}
               aria-label="Next product"
               className="absolute right-[-50px] cursor-pointer bottom-[40%] -translate-y-1/2 w-12 h-12 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 z-10"
             >
-              <Image src="/assets/right-image.png" alt="Next" width={48} height={48} className="w-full h-auto" />
+              <Image
+                src="/assets/right-image.png"
+                alt="Next"
+                width={48}
+                height={48}
+                className="w-full h-auto"
+              />
             </button>
           </div>
         ) : (
@@ -328,7 +364,9 @@ const TrendingThisWeek = () => {
               >
                 <ProductCard
                   product={product}
-                  isWishlisted={wishlist.some((p) => p._id === product.productId)}
+                  isWishlisted={wishlist.some(
+                    (p) => p._id === product.productId,
+                  )}
                   onToggleWishlist={toggleProductInWishlist}
                 />
               </div>

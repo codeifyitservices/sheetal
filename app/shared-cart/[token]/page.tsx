@@ -6,7 +6,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Footer from "@/app/components/Footer";
 import { getApiImageUrl } from "@/app/services/api";
-import { getSharedCart } from "@/app/services/cartService";
+import { getSharedCart } from "../../services/cartService";
+import { useSettings } from "../../hooks/useSettings";
+import { getLogoUrl } from "../../services/settingsService";
+
 import { getSettings } from "@/app/services/settingsService";
 import { isAuthenticated } from "@/app/services/authService";
 import { redirectToLogin } from "@/app/utils/authRedirect";
@@ -15,6 +18,8 @@ import type { CartItem } from "@/app/hooks/useCart";
 import HideStorefrontHeader from "@/app/components/HideStorefrontHeader";
 
 const SharedCartPage = () => {
+  const { settings: brandSettings } = useSettings();
+  const logoUrl = getLogoUrl(brandSettings);
   const router = useRouter();
   const params = useParams<{ token?: string | string[] }>();
   const rawToken = params?.token;
@@ -139,7 +144,7 @@ const SharedCartPage = () => {
           <div className="flex items-center">
             <Link href="/">
               <Image
-                src="/assets/335014072.png"
+                src={logoUrl}
                 alt="Studio By Sheetal"
                 width={40}
                 height={40}

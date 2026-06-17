@@ -19,6 +19,7 @@ import { getApiImageUrl } from "../services/api";
 import { useProducts } from "../hooks/useProducts";
 import { useWishlist } from "../hooks/useWishlist";
 import { useProductFilters } from "../hooks/useProductFilters";
+import { applyFilters, ActiveFilter } from "../utils/productFiltering";
 import {
   consumeRedirectField,
   consumeRedirectModalState,
@@ -60,10 +61,24 @@ const ProductListContent = ({
   /* =======================
      UI State
   ======================= */
-  const [mobileSortOpen, setMobileSortOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [sortByOpen, setSortByOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+const [mobileSortOpen, setMobileSortOpen] = useState(false);
+const [filtersOpen, setFiltersOpenState] = useState(false);
+const [sortByOpen, setSortByOpenState] = useState(false);
+const [viewMode, setViewModeState] = useState<"grid" | "list">("grid");
+
+const setFiltersOpen = (value: boolean) => {
+  setSortByOpenState(false);
+  setFiltersOpenState(value);
+};
+
+const setSortByOpen = (value: boolean) => {
+  setSortByOpenState(value);
+};
+
+const setViewMode = (mode: "grid" | "list") => {
+  setSortByOpenState(false);
+  setViewModeState(mode);
+};
   const activeType = searchParams.get("type");
   const activeValue = searchParams.get("value");
 
@@ -164,7 +179,7 @@ const ProductListContent = ({
   /* =======================
      Extract Filter Options
   ======================= */
-  const filterOptions = useProductFilters(products);
+  const filterOptions = useProductFilters(products, activeFilters);
 
   const loading = isResolvingCategory || (productsLoading && products.length === 0);
   const queryString = searchParams.toString();
@@ -246,9 +261,11 @@ const ProductListContent = ({
   };
 
   /* =======================
-     Transform Products for Grid
+     Apply Filters and Sorting
   ======================= */
-  const gridProducts = products.map((p) => {
+  const filteredRawProducts = applyFilters(products, activeFilters);
+
+  const filteredProducts = filteredRawProducts.map((p) => {
     let lowestPrice = Infinity;
     let lowestMrp = Infinity;
 
@@ -304,76 +321,6 @@ const ProductListContent = ({
     };
   });
 
-  /* =======================
-     Apply Filters and Sorting
-  ======================= */
-  let filteredProducts = [...gridProducts];
-
-  const filtersByType = activeFilters.reduce(
-    (acc, filter) => {
-      if (!acc[filter.type]) acc[filter.type] = [];
-      acc[filter.type].push(filter.value);
-      return acc;
-    },
-    {} as Record<string, string[]>,
-  );
-
-  (Object.entries(filtersByType) as [string, string[]][]).forEach(
-    ([type, values]) => {
-      if (type === "size") {
-        filteredProducts = filteredProducts.filter((p) =>
-          products
-            .find((prod) => prod._id === p._id)
-            ?.variants?.some((v) =>
-              v.sizes?.some((s) => values.includes(s.name)),
-            ),
-        );
-      } else if (type === "color") {
-        filteredProducts = filteredProducts.filter((p) =>
-          products
-            .find((prod) => prod._id === p._id)
-            ?.variants?.some((v) => values.includes(v.color?.name ?? "")),
-        );
-      } else if (type === "price") {
-        filteredProducts = filteredProducts.filter((p) =>
-          values.some((val) => {
-            const [min, max] = val.split("-").map(Number);
-            return p.price >= min && (isNaN(max) || p.price <= max);
-          }),
-        );
-      } else if (type === "availability") {
-        filteredProducts = filteredProducts.filter((p) => {
-          const product = products.find((prod) => prod._id === p._id);
-          return values.some((val) => {
-            if (val === "In Stock") return product && product.stock > 10;
-            if (val === "Low Stock (≤10)")
-              return product && product.stock > 0 && product.stock <= 10;
-            return false;
-          });
-        });
-      } else if (type === "category") {
-        // Multi-select: keep products matching ANY of the selected categories
-        filteredProducts = filteredProducts.filter((p) => {
-          const product = products.find((prod) => prod._id === p._id);
-          return values.includes(product?.category?.name ?? "");
-        });
-      } else {
-        filteredProducts = filteredProducts.filter((p) => {
-          const product = products.find((prod) => prod._id === p._id);
-          const productFields = product as Record<string, unknown> | undefined;
-          const fieldValue = productFields?.[type];
-          if (typeof fieldValue === "string") {
-            return values.includes(fieldValue);
-          }
-          return (
-            Array.isArray(fieldValue) &&
-            values.some((val) => fieldValue.includes(val))
-          );
-        });
-      }
-    },
-  );
-
   if (sortOption === "price_asc") {
     filteredProducts.sort((a, b) => a.price - b.price);
   } else if (sortOption === "price_desc") {
@@ -413,7 +360,7 @@ const ProductListContent = ({
           removeFilter={removeFilter}
           clearFilters={clearFilters}
           viewMode={viewMode}
-          setViewMode={(mode) => setViewMode(mode)}
+          setViewMode={setViewMode}
           filterOptions={filterOptions}
           totalProducts={filteredProducts.length}
           onFilterChange={handleFilterChange}

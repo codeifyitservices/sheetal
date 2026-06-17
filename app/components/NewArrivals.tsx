@@ -9,12 +9,21 @@ import { useWishlist } from "../hooks/useWishlist";
 import WishlistLoginModal from "./WishlistLoginModal";
 import { buildProductHref } from "@/app/utils/productRoutes";
 import StarRating from "../product/components/StarRating";
+import { NewArrivalsContent } from "../services/homepageService";
 
 const MIN_FOR_CAROUSEL = 5;
 
-const NewArrivals = () => {
+const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const {
+    heading = "New Arrivals",
+    subheading: description = "Pick your beauty products today. 50% OFF on the new brands. Order all classy products today!",
+    products: propProducts = [],
+    buttonText = "Explore More",
+    buttonUrl = "/product-list?sort=newest",
+  } = content || {};
 
   const {
     wishlist,
@@ -41,6 +50,11 @@ const NewArrivals = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (propProducts && propProducts.length > 0) {
+        setProducts(propProducts);
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         const res = await getNewArrivals();
@@ -52,7 +66,7 @@ const NewArrivals = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [propProducts]);
 
   const getDisplayPrice = (product: Product) => {
     let minPrice = Infinity;
@@ -61,11 +75,17 @@ const NewArrivals = () => {
     product.variants?.forEach((v: any) => {
       v.sizes?.forEach((s: any) => {
         const effective = s.discountPrice > 0 ? s.discountPrice : s.price;
-        if (effective < minPrice) { minPrice = effective; relatedMrp = s.price; }
+        if (effective < minPrice) {
+          minPrice = effective;
+          relatedMrp = s.price;
+        }
       });
     });
 
-    if (minPrice === Infinity) { minPrice = 0; relatedMrp = 0; }
+    if (minPrice === Infinity) {
+      minPrice = 0;
+      relatedMrp = 0;
+    }
 
     const discount =
       minPrice > 0 && relatedMrp > minPrice
@@ -73,8 +93,8 @@ const NewArrivals = () => {
         : "";
 
     return {
-      price:    `₹ ${minPrice.toFixed(2)}`,
-      mrp:      `₹ ${relatedMrp.toFixed(2)}`,
+      price: `₹ ${minPrice.toFixed(2)}`,
+      mrp: `₹ ${relatedMrp.toFixed(2)}`,
       discount,
     };
   };
@@ -106,11 +126,19 @@ const NewArrivals = () => {
               }}
             >
               <Image
-                src={isWishlisted ? "/assets/icons/heart-solid.svg" : "/assets/icons/heart.svg"}
+                src={
+                  isWishlisted
+                    ? "/assets/icons/heart-solid.svg"
+                    : "/assets/icons/heart.svg"
+                }
                 alt="Wishlist"
                 width={18}
                 height={18}
-                className={isWishlisted ? "" : "group-hover/icon:brightness-0 group-hover/icon:invert"}
+                className={
+                  isWishlisted
+                    ? ""
+                    : "group-hover/icon:brightness-0 group-hover/icon:invert"
+                }
               />
             </button>
           </div>
@@ -124,7 +152,11 @@ const NewArrivals = () => {
               className="w-full h-full object-cover rounded-xl transition-opacity duration-700 group-hover:opacity-0"
             />
             <Image
-              src={product.hoverImage?.url || product.mainImage?.url || "/assets/placeholder-product.jpg"}
+              src={
+                product.hoverImage?.url ||
+                product.mainImage?.url ||
+                "/assets/placeholder-product.jpg"
+              }
               alt={product.name}
               width={400}
               height={533}
@@ -196,25 +228,22 @@ const NewArrivals = () => {
   return (
     <div className="container-fluid px-4 py-10 sm:px-6 md:py-16 lg:px-20 font-[family-name:var(--font-montserrat)]">
       <div className="container mx-auto px-0 md:px-4">
-
         {/* On mobile: heading + text stacked above carousel.
             On lg+: side-by-side grid. */}
         <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8 items-start lg:items-center">
-
           {/* LEFT CONTENT */}
           <div className="lg:col-span-3 xl:col-span-4 text-center md:text-left">
             <h2 className="text-[#6a3f07] mb-3 font-[family-name:var(--font-optima)] leading-tight">
-              New Arrivals
+              {heading}
             </h2>
             <p className="mb-5 px-2 text-[15px] text-black font-[family-name:var(--font-montserrat)] md:mb-8 md:p-0 md:text-[18px]">
-              Pick your beauty products today. 50% OFF on the new brands. Order
-              all classy products today!
+              {description}
             </p>
             <Link
-              href="/product-list?sort=newest"
+              href={buttonUrl}
               className="inline-block rounded border-y border-black text-black py-2.5 md:py-3 px-8 md:px-10 text-[16px] uppercase transition-all duration-500 hover:border-[#a2690f]"
             >
-              Explore More
+              {buttonText}
             </Link>
           </div>
 
@@ -222,7 +251,9 @@ const NewArrivals = () => {
           <div className="lg:col-span-9 xl:col-span-8 w-full">
             {loading ? (
               <div className="grid grid-cols-2 gap-3 px-0 sm:px-2 md:grid-cols-3 md:gap-4 md:px-4">
-                {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
               </div>
             ) : isCarousel ? (
               <div className="relative group/slider">
@@ -244,14 +275,26 @@ const NewArrivals = () => {
                   aria-label="Previous product"
                   className="absolute left-[-50px] cursor-pointer bottom-[40%] -translate-y-1/2 w-12 h-12 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 z-10"
                 >
-                  <Image src="/assets/left-image.png" alt="Previous" width={48} height={48} className="w-full h-auto" />
+                  <Image
+                    src="/assets/left-image.png"
+                    alt="Previous"
+                    width={48}
+                    height={48}
+                    className="w-full h-auto"
+                  />
                 </button>
                 <button
                   onClick={scrollNext}
                   aria-label="Next product"
                   className="absolute right-[-50px] cursor-pointer bottom-[40%] -translate-y-1/2 w-12 h-12 flex items-center justify-center opacity-0 group-hover/slider:opacity-100 transition-opacity duration-300 z-10"
                 >
-                  <Image src="/assets/right-image.png" alt="Next" width={48} height={48} className="w-full h-auto" />
+                  <Image
+                    src="/assets/right-image.png"
+                    alt="Next"
+                    width={48}
+                    height={48}
+                    className="w-full h-auto"
+                  />
                 </button>
               </div>
             ) : (

@@ -116,6 +116,7 @@ export interface Product {
   metaDescription?: string;
   metaKeywords?: string;
   canonicalUrl?: string;
+  schema?: string;
 
   averageRating: number;
   totalReviews: number;

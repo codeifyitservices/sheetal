@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getApiImageUrl } from "../services/api";
+import { useSettings } from "../hooks/useSettings";
+import { getLogoUrl } from "../services/settingsService";
 
 export type BannerItem = {
   _id: string;
@@ -86,6 +88,8 @@ const dedupeById = <T extends { _id: string }>(items: T[]) => {
 };
 
 const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
   const desktopBanners = dedupeById(banners.filter(hasDesktopImage));
   const mobileBanners = dedupeById(banners.filter(hasMobileImage));
   const resolvedDesktopBanners =
@@ -262,7 +266,7 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
         <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-24">
           <Link href="/" className="pointer-events-auto">
             <Image
-              src="/assets/625030871.png"
+              src={logoUrl}
               alt="Studio By Sheetal"
               width={300}
               height={150}

@@ -11,6 +11,8 @@ import { getSettings } from "../services/settingsService";
 import { isAuthenticated } from "../services/authService";
 import { peekRedirectField, redirectToLogin } from "../utils/authRedirect";
 import { createSharedCart } from "../services/cartService";
+import { useSettings } from "../hooks/useSettings";
+import { getLogoUrl } from "../services/settingsService";
 import Footer from "../components/Footer";
 import HideStorefrontHeader from "../components/HideStorefrontHeader";
 
@@ -24,6 +26,8 @@ const readSharedCartToken = (): string => {
 
 const CartPage = () => {
   const router = useRouter();
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
   const [sharedCartToken, setSharedCartToken] = useState(readSharedCartToken);
   const {
     cart: cartItems,
@@ -313,7 +317,7 @@ const CartPage = () => {
           <div className="flex items-center">
             <Link href="/">
               <Image
-                src="/assets/335014072.png"
+                src={logoUrl}
                 alt="Studio By Sheetal"
                 width={40}
                 height={40}

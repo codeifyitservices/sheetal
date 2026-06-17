@@ -27,6 +27,8 @@ import {
   syncRedirectFromQuery,
 } from "../../utils/authRedirect";
 import { getLoginCoupon } from "../../services/couponService";
+import { useSettings } from "../../hooks/useSettings";
+import { getLogoUrl } from "../../services/settingsService";
 import toast from "react-hot-toast";
 
 declare global {
@@ -53,6 +55,8 @@ interface LoginCoupon {
 
 // ✅ Inner component that safely uses useSearchParams
 const LoginForm = () => {
+  const { settings } = useSettings();
+  const logoUrl = getLogoUrl(settings);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -301,8 +305,19 @@ const LoginForm = () => {
           </div>
 
           {/* RIGHT FORM */}
-          <div className="flex items-center justify-center px-6 sm:px-10">
+          <div className="flex items-center justify-center px-6 sm:px-10 py-10">
             <div className="w-full max-w-sm">
+              <div className="flex justify-center mb-8">
+                <Link href="/">
+                  <Image
+                    src={logoUrl}
+                    alt="Logo"
+                    width={180}
+                    height={60}
+                    className="h-[60px] w-auto object-contain"
+                  />
+                </Link>
+              </div>
               <h1 className="text-2xl font-medium text-gray-900 mb-6 font-[family-name:var(--font-optima)]">
                 Login or Signup
               </h1>

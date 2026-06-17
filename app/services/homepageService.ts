@@ -22,9 +22,66 @@ export interface TopInfoConfig {
   customCtaHref: string;
 }
 
+export interface AboutSBSContent {
+  heading: string;
+  subheading: string;
+  description: string;
+  buttonText: string;
+  buttonUrl: string;
+}
+
+export interface HiddenBeautyContent {
+  heading: string;
+  subheading: string;
+  categories: any[];
+}
+
+export interface CollectionsContent {
+  heading: string;
+  subheading: string;
+  products: any[];
+}
+
+export interface TrendingThisWeekContent {
+  heading: string;
+  subheading: string;
+  products: any[];
+}
+
+export interface NewArrivalsContent {
+  heading: string;
+  subheading: string;
+  products: any[];
+  buttonText: string;
+  buttonUrl: string;
+}
+
+export interface InstagramDiariesContent {
+  heading: string;
+  subheading: string;
+}
+
+export interface TestimonialsContent {
+  heading: string;
+  subheading: string;
+}
+
 export interface HomepageSettings {
   sections: HomepageSections;
   topInfoConfig: TopInfoConfig;
+  aboutSBS: AboutSBSContent;
+  hiddenBeauty: HiddenBeautyContent;
+  collections: CollectionsContent;
+  trendingThisWeek: TrendingThisWeekContent;
+  newArrivals: NewArrivalsContent;
+  instagramDiaries: InstagramDiariesContent;
+  testimonials: TestimonialsContent;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  schema?: string;
 }
 
 export const defaultTopInfoConfig: TopInfoConfig = {
@@ -51,7 +108,6 @@ const defaultSections: HomepageSections = {
 
 export const getHomepageSettings = async (): Promise<HomepageSettings> => {
   const result = await apiFetch("/homepage/sections");
-  console.log(result)
 
   return {
     sections: {
@@ -62,6 +118,19 @@ export const getHomepageSettings = async (): Promise<HomepageSettings> => {
       ...defaultTopInfoConfig,
       ...(result?.topInfoConfig || {}),
     },
+    aboutSBS: result?.aboutSBS || {},
+    hiddenBeauty: result?.hiddenBeauty || { categories: [] },
+    collections: result?.collections || { products: [] },
+    trendingThisWeek: result?.trendingThisWeek || { products: [] },
+    newArrivals: result?.newArrivals || { products: [] },
+    instagramDiaries: result?.instagramDiaries || {},
+    testimonials: result?.testimonials || {},
+    metaTitle: result?.metaTitle || "",
+    metaDescription: result?.metaDescription || "",
+    metaKeywords: result?.metaKeywords || "",
+    canonicalUrl: result?.canonicalUrl || "",
+    ogImage: result?.ogImage || "",
+    schema: result?.schema || "",
   };
 };
 
