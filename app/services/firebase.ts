@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
+  FacebookAuthProvider,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
@@ -36,6 +37,13 @@ googleProvider.setCustomParameters({
 });
 googleProvider.addScope("email");
 googleProvider.addScope("profile");
+
+const facebookProvider = new FacebookAuthProvider();
+facebookProvider.setCustomParameters({
+  display: "popup",
+});
+facebookProvider.addScope("email");
+facebookProvider.addScope("public_profile");
 
 const clearRecaptchaContainer = (containerId: string) => {
   if (typeof window === "undefined") return;
@@ -204,6 +212,7 @@ export const setupInvisibleRecaptcha = async (containerId: string) => {
 export {
   auth,
   googleProvider,
+  facebookProvider,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,

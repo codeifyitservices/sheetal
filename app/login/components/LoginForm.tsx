@@ -12,6 +12,7 @@ import {
 import {
   auth,
   googleProvider,
+  facebookProvider,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
@@ -61,9 +62,9 @@ const LoginForm = () => {
   const searchParams = useSearchParams();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingType, setLoadingType] = useState<"phone" | "google" | null>(
-    null,
-  );
+  const [loadingType, setLoadingType] = useState<
+    "phone" | "google" | "facebook" | null
+  >(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loginCoupon, setLoginCoupon] = useState<LoginCoupon | null>(null);
 
@@ -200,6 +201,45 @@ const LoginForm = () => {
     }
   };
 
+  // Shared post-popup-auth flow for any social provider (Google, Facebook, etc.)
+  const completeSocialLogin = async (
+    idToken: string,
+  ): Promise<void> => {
+    const data = await verifyIdToken(idToken);
+
+    if (data.success && data.token) {
+      if (data.user?.status === "Inactive") {
+        toast.error(
+          "This ID has been blocked by the admin due to some reasons, please contact the team for further procedures",
+          { duration: 6000 },
+        );
+        return;
+      }
+      login(data.token, data.user);
+      await mergeGuestCartOnLogin();
+      toast.success("Logged in successfully!");
+      const redirectUrl = consumeRedirectTarget();
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push("/");
+      }
+    } else {
+      const isBlocked =
+        data.message?.toLowerCase().includes("blocked") ||
+        data.message?.toLowerCase().includes("inactive");
+
+      if (isBlocked) {
+        toast.error(
+          "This ID has been blocked by the admin due to some reasons, please contact the team for further procedures",
+          { duration: 6000 },
+        );
+      } else {
+        toast.error(data.message || "Backend login failed.");
+      }
+    }
+  };
+
   const handleGoogleLogin = async () => {
     if (!acceptedTerms) {
       toast.error("Please agree to the Terms of Use and Privacy Policy.");
@@ -212,40 +252,7 @@ const LoginForm = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       const idToken = await user.getIdToken();
-
-      const data = await verifyIdToken(idToken);
-
-      if (data.success && data.token) {
-        if (data.user?.status === "Inactive") {
-          toast.error(
-            "This ID has been blocked by the admin due to some reasons, please contact the team for further procedures",
-            { duration: 6000 },
-          );
-          return;
-        }
-        login(data.token, data.user);
-        await mergeGuestCartOnLogin();
-        toast.success("Logged in successfully!");
-        const redirectUrl = consumeRedirectTarget();
-        if (redirectUrl) {
-          router.push(redirectUrl);
-        } else {
-          router.push("/");
-        }
-      } else {
-        const isBlocked =
-          data.message?.toLowerCase().includes("blocked") ||
-          data.message?.toLowerCase().includes("inactive");
-
-        if (isBlocked) {
-          toast.error(
-            "This ID has been blocked by the admin due to some reasons, please contact the team for further procedures",
-            { duration: 6000 },
-          );
-        } else {
-          toast.error(data.message || "Backend login failed.");
-        }
-      }
+      await completeSocialLogin(idToken);
     } catch (error: unknown) {
       const firebaseError = error as { code?: string; message?: string };
       console.error("Google Login Error:", error);
@@ -258,6 +265,40 @@ const LoginForm = () => {
         );
       } else {
         toast.error(firebaseError.message || "Failed to login with Google");
+      }
+    } finally {
+      setLoading(false);
+      setLoadingType(null);
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    if (!acceptedTerms) {
+      toast.error("Please agree to the Terms of Use and Privacy Policy.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setLoadingType("facebook");
+      const result = await signInWithPopup(auth, facebookProvider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+      await completeSocialLogin(idToken);
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string; message?: string };
+      console.error("Facebook Login Error:", error);
+      if (
+        firebaseError.code === "auth/account-exists-with-different-credential"
+      ) {
+        toast.error(
+          "An account already exists with this email but using a different sign-in method (like phone or Google). Please sign in using your original method or link accounts in your profile.",
+          { duration: 6000 },
+        );
+      } else if (firebaseError.code === "auth/popup-closed-by-user") {
+        // User closed the popup intentionally; no need to show an error toast.
+      } else {
+        toast.error(firebaseError.message || "Failed to login with Facebook");
       }
     } finally {
       setLoading(false);
@@ -376,7 +417,9 @@ const LoginForm = () => {
                 {loading
                   ? loadingType === "google"
                     ? "Verifying..."
-                    : "Sending OTP…"
+                    : loadingType === "facebook"
+                      ? "Verifying..."
+                      : "Sending OTP…"
                   : "Continue"}
               </button>
 
@@ -388,13 +431,30 @@ const LoginForm = () => {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-10 h-10 flex items-center justify-center cursor-pointer"
+                  disabled={loading}
+                  aria-label="Continue with Google"
+                  className="w-10 h-10 flex items-center justify-center cursor-pointer disabled:opacity-50"
                 >
                   <Image
                     src="/assets/icons/google.svg"
                     alt="Google"
                     width={25}
                     height={25}
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleFacebookLogin}
+                  disabled={loading}
+                  aria-label="Continue with Facebook"
+                  className="w-10 h-10 flex items-center justify-center cursor-pointer disabled:opacity-50"
+                >
+                  <Image
+                    src="/assets/icons/facebook.svg"
+                    alt="Facebook"
+                    width={32}
+                    height={32}
                   />
                 </button>
               </div>

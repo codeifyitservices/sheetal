@@ -20,6 +20,7 @@ interface ProductFilterBarProps {
   onFilterChange: (type: string, value: string) => void;
   onSortChange: (sortOption: string) => void;
   currentSort?: string;
+  fromLookbook?: boolean;
 }
 
 const toSentenceCase = (text: string): string => {
@@ -42,6 +43,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
   onFilterChange,
   onSortChange,
   currentSort = "newest",
+  fromLookbook = false,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>([]);
   const sortByRef = useRef<HTMLDivElement>(null);
@@ -214,6 +216,12 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
                   { key: "price_desc", label: "Price: High to Low" },
                   { key: "newest", label: "New Arrivals" },
                   { key: "popularity", label: "Popularity" },
+                  ...(fromLookbook
+                    ? [
+                        { key: "discount_desc", label: "Discount: High to Low" },
+                        { key: "discount_asc", label: "Discount: Low to High" },
+                      ]
+                    : []),
                 ].map(({ key, label }) => (
                   <li key={key}>
                     <button

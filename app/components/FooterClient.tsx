@@ -97,7 +97,7 @@ const FooterClient = ({
   return (
     <>
       <footer
-        className="mt-20 w-full text-[#f8f0b4] font-[family-name:var(--font-montserrat)]"
+        className="w-full text-[#f8f0b4] font-[family-name:var(--font-montserrat)]"
         style={{
           backgroundImage: "url('/assets/footer-bg.jpg')",
           backgroundPosition: "center center",

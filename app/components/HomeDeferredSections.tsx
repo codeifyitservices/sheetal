@@ -81,7 +81,7 @@ const HomeDeferredSections = ({ settings }: { settings: HomepageSettings }) => {
       )}
       {sections?.blogs && (
         <DeferredSection fallback={sectionShell("px-4 py-12")()}>
-          <Blogs />
+          <Blogs content={settings.blogs} />
         </DeferredSection>
       )}
     </>

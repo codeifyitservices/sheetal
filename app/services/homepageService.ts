@@ -66,6 +66,10 @@ export interface TestimonialsContent {
   subheading: string;
 }
 
+export interface BlogsContent {
+  heading: string;
+}
+
 export interface HomepageSettings {
   sections: HomepageSections;
   topInfoConfig: TopInfoConfig;
@@ -76,6 +80,7 @@ export interface HomepageSettings {
   newArrivals: NewArrivalsContent;
   instagramDiaries: InstagramDiariesContent;
   testimonials: TestimonialsContent;
+  blogs: BlogsContent;
   metaTitle?: string;
   metaDescription?: string;
   metaKeywords?: string;
@@ -125,6 +130,7 @@ export const getHomepageSettings = async (): Promise<HomepageSettings> => {
     newArrivals: result?.newArrivals || { products: [] },
     instagramDiaries: result?.instagramDiaries || {},
     testimonials: result?.testimonials || {},
+    blogs: result?.blogs || { heading: "Latest Articles & Blogs" },
     metaTitle: result?.metaTitle || "",
     metaDescription: result?.metaDescription || "",
     metaKeywords: result?.metaKeywords || "",

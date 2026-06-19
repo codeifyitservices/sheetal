@@ -21,6 +21,7 @@ interface PageData {
   canonicalUrl?: string;
   ogImage?: string;
   schema?: string;
+  seoSchema?: string;
 }
 
 const pageDefaults: Record<string, { title: string; content: string }> = {
@@ -110,7 +111,7 @@ const PolicyPage = async ({ slug }: PolicyPageProps) => {
   const title = data?.title || fallback.title;
   const htmlContent = data?.content || fallback.content;
   const schema =
-    parseSchemaString(data?.schema) ||
+    parseSchemaString(data?.seoSchema || data?.schema) ||
     buildPageSchema(
       {
         ...data,

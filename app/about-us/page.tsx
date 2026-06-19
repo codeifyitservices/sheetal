@@ -3,12 +3,9 @@ import Footer from "../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
 import { API_BASE_URL } from "../services/api";
-
-export const metadata: Metadata = {
-  title: "About Us | Studio By Sheetal",
-  description: "Learn more about Studio By Sheetal, our journey since 2017, our mission to provide quality ethnic wear, and the craftsmanship behind our sarees.",
-  keywords: "about studio by sheetal, sheetal by studio story, ethnic wear brand surat, craftsmanship, saree legacy",
-};
+import JsonLd from "../components/JsonLd";
+import { getSeoSettings } from "../services/seoSettingsService";
+import { buildPageSchema, parseSchemaString } from "../utils/schema";
 
 interface SectionData {
   image?: string;
@@ -21,6 +18,43 @@ interface AboutData {
   journey?: SectionData;
   mission?: SectionData;
   craft?: SectionData;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+  seoSchema?: string;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const [data, seoSettings] = await Promise.all([
+    getAboutPageData(),
+    getSeoSettings(),
+  ]);
+
+  const title = data?.metaTitle || "About Us | Studio By Sheetal";
+  const description =
+    data?.metaDescription ||
+    "Learn more about Studio By Sheetal, our journey since 2017, our mission to provide quality ethnic wear, and the craftsmanship behind our sarees.";
+  const canonical =
+    data?.canonicalUrl ||
+    `${seoSettings?.websiteUrl || "https://studiobysheetal.com"}/about-us`;
+
+  return {
+    title,
+    description,
+    keywords: data?.metaKeywords || "about studio by sheetal, sheetal by studio story, ethnic wear brand surat, craftsmanship, saree legacy",
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      images: data?.ogImage ? [{ url: data.ogImage, alt: title }] : [],
+      type: "website",
+    },
+  };
 }
 
 async function getAboutPageData(): Promise<AboutData | null> {
@@ -36,13 +70,31 @@ async function getAboutPageData(): Promise<AboutData | null> {
 }
 
 const AboutUs = async () => {
-  const data = await getAboutPageData();
+  const [data, seoSettings] = await Promise.all([
+    getAboutPageData(),
+    getSeoSettings(),
+  ]);
 
   const getImage = (path: string | undefined, fallback: string): string =>
     path || fallback;
 
+  const schema =
+    parseSchemaString(data?.seoSchema) ||
+    buildPageSchema(
+      {
+        title: data?.banner?.title || "About Us",
+        slug: "about-us",
+        content: data?.journey?.description || "",
+        metaTitle: data?.metaTitle,
+        metaDescription: data?.metaDescription,
+        canonicalUrl: data?.canonicalUrl,
+      },
+      seoSettings,
+    );
+
   return (
     <>
+      <JsonLd data={schema} />
       <div className="container-fluid p-0 relative overflow-hidden md:mt-[75px] mb-[65px] text-center">
         <div className="relative">
           <div className="w-full">

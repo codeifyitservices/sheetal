@@ -4,12 +4,41 @@ import Image from "next/image";
 import Footer from "../components/Footer";
 import { getBlogs, type Blog } from "@/app/services/blogService";
 import { getApiImageUrl } from "@/app/services/api";
+import JsonLd from "../components/JsonLd";
+import { getPageData } from "../components/PolicyPage";
+import { getSeoSettings } from "../services/seoSettingsService";
+import { buildPageSchema, parseSchemaString } from "../utils/schema";
 
-export const metadata: Metadata = {
-  title: "Blogs | Studio By Sheetal",
-  description: "Read our latest blogs about ethnic wear, styling tips, saree trends, and the stories behind our collections.",
-  keywords: "saree blogs, ethnic wear trends, styling tips, Studio By Sheetal blog",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const [data, seoSettings] = await Promise.all([
+    getPageData("blog"),
+    getSeoSettings(),
+  ]);
+
+  const title = data?.metaTitle || data?.title || "Blogs | Studio By Sheetal";
+  const description =
+    data?.metaDescription ||
+    "Read our latest blogs about ethnic wear, styling tips, saree trends, and the stories behind our collections.";
+  const canonical =
+    data?.canonicalUrl ||
+    `${seoSettings?.websiteUrl || "https://studiobysheetal.com"}/blog`;
+
+  return {
+    title,
+    description,
+    keywords: data?.metaKeywords || "saree blogs, ethnic wear trends, styling tips, Studio By Sheetal blog",
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      images: data?.ogImage ? [{ url: data.ogImage, alt: title }] : [],
+      type: "website",
+    },
+  };
+}
 
 type BlogsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -24,12 +53,36 @@ const getPageNumber = (rawPage: string | string[] | undefined) => {
 const BlogsPage = async ({ searchParams }: BlogsPageProps) => {
   const resolvedSearchParams = (await searchParams) || {};
   const page = getPageNumber(resolvedSearchParams.page);
-  const response = await getBlogs({ page, limit: 50 });
+
+  const [response, pageData, seoSettings] = await Promise.all([
+    getBlogs({ page, limit: 50 }),
+    getPageData("blog"),
+    getSeoSettings(),
+  ]);
+
   const blogs: Blog[] = response.success ? response.blogs : [];
   const totalPages = response.success ? response.pages : 1;
+  const pageTitle = pageData?.title || "Blogs";
+
+  const schema =
+    parseSchemaString(pageData?.seoSchema || pageData?.schema) ||
+    (pageData
+      ? buildPageSchema(
+          {
+            title: pageTitle,
+            slug: "blog",
+            content: pageData?.content || "",
+            metaTitle: pageData?.metaTitle,
+            metaDescription: pageData?.metaDescription,
+            canonicalUrl: pageData?.canonicalUrl,
+          },
+          seoSettings,
+        )
+      : null);
 
   return (
     <div className="font-[family-name:var(--font-montserrat)] bg-white">
+      <JsonLd data={schema} />
       <div className="relative w-full h-[300px] md:h-[400px] mt-[40px] md:mt-[75px] overflow-hidden">
         <Image
           src="/assets/690995222.jpg"
@@ -41,14 +94,14 @@ const BlogsPage = async ({ searchParams }: BlogsPageProps) => {
       </div>
       <div className="flex flex-col border-b border-[#ffcf8c] mb-10 justify-center items-center text-center">
         <h1 className="text-4xl md:text-[35px] text-[#6a3f07] mb-2 mt-2 font-[family-name:var(--font-optima)]">
-          Blogs
+          {pageTitle}
         </h1>
         <nav className="text-gray-600 text-[12px] md:text-[15px] mb-6">
           <Link href="/" className="text-[#6a3f07] transition-colors">
             Home
           </Link>
           <span className="mx-2">/</span>
-          <span className="text-[#6a3f07]">Blogs</span>
+          <span className="text-[#6a3f07]">{pageTitle}</span>
         </nav>
       </div>
 

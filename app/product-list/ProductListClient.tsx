@@ -39,6 +39,7 @@ const ProductListContent = ({
   const categorySlug = propCategorySlug || searchParams.get("category");
   const subCategory = searchParams.get("subCategory");
   const searchQuery = searchParams.get("search");
+  const fromLookbook = searchParams.get("fromLookbook") === "true";
 
   // Redirect /product-list?category=xyz to /xyz
   useEffect(() => {
@@ -265,7 +266,19 @@ const setViewMode = (mode: "grid" | "list") => {
   ======================= */
   const filteredRawProducts = applyFilters(products, activeFilters);
 
-  const filteredProducts = filteredRawProducts.map((p) => {
+  // When navigating from a lookbook, show only discounted products
+  // (i.e. at least one variant size where discountPrice < price)
+  const lookbookFiltered = fromLookbook
+    ? filteredRawProducts.filter((p) =>
+        p.variants?.some((variant) =>
+          variant.sizes?.some(
+            (size) => size.discountPrice > 0 && size.discountPrice < size.price
+          )
+        )
+      )
+    : filteredRawProducts;
+
+  const filteredProducts = lookbookFiltered.map((p) => {
     let lowestPrice = Infinity;
     let lowestMrp = Infinity;
 
@@ -313,6 +326,7 @@ const setViewMode = (mode: "grid" | "list") => {
       price: lowestPrice,
       mrp: lowestMrp,
       discount: discountPercent > 0 ? `${discountPercent}% OFF` : "",
+      discountPercent,
       size: sizeLabel,
       rating: p.averageRating || 0,
       soldOut: p.stock <= 0,
@@ -331,6 +345,10 @@ const setViewMode = (mode: "grid" | "list") => {
       if (!a.isStarred && b.isStarred) return 1;
       return b.rating - a.rating;
     });
+  } else if (sortOption === "discount_desc") {
+    filteredProducts.sort((a, b) => b.discountPercent - a.discountPercent);
+  } else if (sortOption === "discount_asc") {
+    filteredProducts.sort((a, b) => a.discountPercent - b.discountPercent);
   } else {
     // Default sorting (e.g., "newest"): Star priority first
     filteredProducts.sort((a, b) => {
@@ -366,6 +384,7 @@ const setViewMode = (mode: "grid" | "list") => {
           onFilterChange={handleFilterChange}
           onSortChange={handleSortChange}
           currentSort={sortOption}
+          fromLookbook={fromLookbook}
         />
 
         <div id="product-grid-section">
@@ -414,6 +433,18 @@ const setViewMode = (mode: "grid" | "list") => {
         onClose={() => setMobileSortOpen(false)}
         onSelect={handleMobileSort}
         currentSort={sortOption}
+        sortOptions={[
+          { label: "Price: Low to High", value: "price_asc" },
+          { label: "Price: High to Low", value: "price_desc" },
+          { label: "New Arrivals", value: "newest" },
+          { label: "Popularity", value: "popularity" },
+          ...(fromLookbook
+            ? [
+                { label: "Discount: High to Low", value: "discount_desc" },
+                { label: "Discount: Low to High", value: "discount_asc" },
+              ]
+            : []),
+        ]}
       />
 
       {selectedProductSlug && (

@@ -87,6 +87,9 @@ export const defaultHomepageSettings: HomepageSettings = {
     heading: "",
     subheading: "",
   },
+  blogs: {
+    heading: "",
+  },
 };
 
 const fetchJson = async (path: string) => {
@@ -124,6 +127,7 @@ const getCachedHomepageSettings = unstable_cache(
         newArrivals: settingsJson?.newArrivals || defaultHomepageSettings.newArrivals,
         instagramDiaries: settingsJson?.instagramDiaries || defaultHomepageSettings.instagramDiaries,
         testimonials: settingsJson?.testimonials || defaultHomepageSettings.testimonials,
+        blogs: settingsJson?.blogs || defaultHomepageSettings.blogs,
         metaTitle: settingsJson?.metaTitle,
         metaDescription: settingsJson?.metaDescription,
         metaKeywords: settingsJson?.metaKeywords,

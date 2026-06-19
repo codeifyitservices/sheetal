@@ -1,10 +1,8 @@
-import React from "react";
-import PolicyPage from "../components/PolicyPage";
+import PolicyPage, { getPolicyMetadata } from "../components/PolicyPage";
 
-export const metadata = {
-  title: "Return & Exchange Policy - Studio By Sheetal",
-  description: "Read the Return & Exchange Policy of Studio By Sheetal",
-};
+export async function generateMetadata() {
+  return getPolicyMetadata("return-exchange-policy");
+}
 
 export default function LegacyReturnPolicyPage() {
   return <PolicyPage slug="return-exchange-policy" />;

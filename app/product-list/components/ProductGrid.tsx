@@ -147,15 +147,25 @@ const ProductCard: React.FC<{
           </div>
 
           <div className="flex flex-wrap items-center gap-1 md:gap-2 mb-2 md:mb-3">
-            <span className="text-xs sm:text-sm md:text-base font-medium text-gray-900 whitespace-nowrap">
-              ₹{product.price.toLocaleString("en-IN")}
-            </span>
-            <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 line-through whitespace-nowrap">
-              ₹{product.mrp.toLocaleString("en-IN")}
-            </span>
-            <span className="text-[10px] sm:text-xs md:text-sm text-[#B78D65] font-semibold whitespace-nowrap uppercase">
-              {product.discount}
-            </span>
+            {product.mrp !== undefined && product.price !== undefined && Number(product.mrp) !== Number(product.price) ? (
+              <>
+                <span className="text-xs sm:text-sm md:text-base font-medium text-gray-900 whitespace-nowrap">
+                  ₹{product.price.toLocaleString("en-IN")}
+                </span>
+                <span className="text-[10px] sm:text-xs md:text-sm text-gray-400 line-through whitespace-nowrap">
+                  ₹{product.mrp.toLocaleString("en-IN")}
+                </span>
+                {product.discount && (
+                  <span className="text-[10px] sm:text-xs md:text-sm text-[#B78D65] font-semibold whitespace-nowrap uppercase">
+                    {product.discount}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-xs sm:text-sm md:text-base font-medium text-gray-900 whitespace-nowrap">
+                ₹{(product.mrp || product.price).toLocaleString("en-IN")}
+              </span>
+            )}
           </div>
 
           <Link

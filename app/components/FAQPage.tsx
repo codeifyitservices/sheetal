@@ -14,7 +14,8 @@ export async function getFaqMetadata(): Promise<Metadata> {
     getSeoSettings(),
   ]);
 
-  const title = data?.metaTitle || data?.pageTitle || "Frequently Asked Questions";
+  const title =
+    data?.metaTitle || data?.pageTitle || "Frequently Asked Questions";
   const description =
     data?.metaDescription ||
     `Find answers to frequently asked questions about ${seoSettings.websiteName || "Studio By Sheetal"}`;
@@ -46,7 +47,7 @@ const FAQPage = async () => {
   if (!data) {
     return <div className="p-20 text-center">Loading...</div>;
   }
-  console.log(data)
+  console.log(data);
 
   const schema =
     parseSchemaString(data?.seoSchema) || buildFaqSchema(data, seoSettings);
@@ -55,23 +56,26 @@ const FAQPage = async () => {
     <>
       <JsonLd data={schema} />
 
-      <div className="min-h-screen bg-white md:mt-[75px]">
-        <div className="max-w-4xl mx-auto px-6 py-10">
-
+      <div
+        style={{
+          backgroundImage: "url(/assets/bg.jpg)",
+        }}
+        className="md:mt-[50px] flex justify-center"
+      >
+        <div className="w-5xl px-6 py-10">
           {/* ── Header row ── */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center mt-10 justify-between mb-8">
             <h1 className="font-optima text-[32px] md:text-[38px] text-[#7a4e1a] font-normal leading-tight tracking-wide">
               Frequently Asked Questions
             </h1>
 
             <div className="flex items-center gap-4 shrink-0 ml-8">
               <span className="hidden sm:block font-[family-name:var(--font-montserrat)] font-medium text-[15px] text-black whitespace-nowrap">
-                
                 {data.ctaText ? data.ctaText : "Still need help?"}
               </span>
               <Link
                 href={data.ctaButtonLink || "/contact"}
-                className="border border-[#cccccc] text-black font-[family-name:var(--font-montserrat)] text-[15px] tracking-wider px-5 py-2 hover:text-[#9c6000] transition-colors duration-200 whitespace-nowrap"
+                className="border border-[#cccccc] text-black font-[family-name:var(--font-montserrat)] text-[15px] tracking-wider px-4 py-2 hover:text-[#9c6000] transition-colors duration-200 whitespace-nowrap"
               >
                 {data.ctaButtonText || "Contact Us"}
               </Link>
@@ -94,7 +98,6 @@ const FAQPage = async () => {
                 />
               ))}
           </div>
-
         </div>
       </div>
 

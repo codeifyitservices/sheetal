@@ -375,7 +375,7 @@ const InvoicePageInner = () => {
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Platform Fee</span>
-                <span>₹{order.platformFee.toLocaleString("en-IN")}</span>
+                <span>₹{order.platformFee?.toLocaleString("en-IN")}</span>
               </div>
               <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
                 <span className="text-lg font-bold text-gray-900">Total</span>

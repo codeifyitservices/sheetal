@@ -184,12 +184,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
           <span className="text-[22px] font-normal">
             ₹ {priceToDisplay.toFixed(2)}
           </span>
-          {originalPriceToDisplay > 0 && (
+          {originalPriceToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
             <span className="text-[18px] text-gray-400 line-through">
               ₹ {originalPriceToDisplay.toFixed(2)}
             </span>
           )}
-          {discountPercentageToDisplay > 0 && (
+          {discountPercentageToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
             <span className="text-[16px] text-[#6a3f0e] font-medium">
               Save {discountPercentageToDisplay}%
             </span>
@@ -383,7 +383,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
           <span className="text-base font-bold leading-tight">
             ₹ {priceToDisplay.toFixed(2)}
           </span>
-          {originalPriceToDisplay > 0 && (
+          {originalPriceToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
             <span className="text-xs text-gray-400 line-through">
               ₹ {originalPriceToDisplay.toFixed(2)}
             </span>

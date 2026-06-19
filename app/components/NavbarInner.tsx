@@ -137,7 +137,11 @@ const DynamicMegaMenu = ({
   const logoUrl = getLogoUrl(settings);
 
   const tagGroups = [
-    { title: "Sub Categories", items: category.subCategories, type: "subCategory" },
+    {
+      title: "Sub Categories",
+      items: category.subCategories,
+      type: "subCategory",
+    },
     { title: "By Occasion", items: category.occasion, type: "occasion" },
     { title: "By Fabric", items: category.fabric, type: "fabric" },
     { title: "By Style", items: category.style, type: "style" },
@@ -200,7 +204,9 @@ const DynamicMegaMenu = ({
                         className="flex items-center gap-1.5 text-gray-700 hover:text-gray-900 transition-colors capitalize"
                         onClick={handleCloseMegaMenu}
                       >
-                        <span className="text-gray-900 text-[20px] leading-none">•</span>
+                        <span className="text-gray-900 text-[20px] leading-none">
+                          •
+                        </span>
                         {tag}
                       </Link>
                     </li>
@@ -220,7 +226,10 @@ const DynamicMegaMenu = ({
               latestProducts.map((product) => (
                 <div key={product._id} className="text-center group/product">
                   <div className="mb-2 overflow-hidden rounded-lg relative">
-                    <Link href={buildProductHref(product)} onClick={handleCloseMegaMenu}>
+                    <Link
+                      href={buildProductHref(product)}
+                      onClick={handleCloseMegaMenu}
+                    >
                       <Image
                         src={getProductImageUrl(product)}
                         alt={product.name}
@@ -232,7 +241,10 @@ const DynamicMegaMenu = ({
                       />
                     </Link>
                   </div>
-                  <Link href={buildProductHref(product)} onClick={handleCloseMegaMenu}>
+                  <Link
+                    href={buildProductHref(product)}
+                    onClick={handleCloseMegaMenu}
+                  >
                     <p className="font-semibold text-sm text-gray-800 mb-1 hover:text-[#b3a660] transition-colors line-clamp-1">
                       {product.name}
                     </p>
@@ -262,9 +274,7 @@ const DynamicMegaMenu = ({
       </div>
     </div>
   );
-
 };
-
 
 interface NavbarUserIconProps {
   isClientMounted: boolean;
@@ -288,22 +298,46 @@ const NavbarUserIcon: React.FC<NavbarUserIconProps> = ({
   if (!isClientMounted) {
     return (
       <Link href="/login" className="hover:opacity-80 transition-opacity">
-        <Image src="/assets/icons/user.svg" alt="User" width={24} height={24} className="w-6 h-6" />
+        <Image
+          src="/assets/icons/user.svg"
+          alt="User"
+          width={24}
+          height={24}
+          className="w-6 h-6"
+        />
       </Link>
     );
   }
 
   if (isAuthenticatedUser) {
     return (
-      <div className="relative group" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-        <Link href="/my-account" className="hover:opacity-80 transition-opacity">
-          <Image src="/assets/icons/user.svg" alt="User" width={24} height={24} className="w-6 h-6" />
+      <div
+        className="relative group"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        <Link
+          href="/my-account"
+          className="hover:opacity-80 transition-opacity"
+        >
+          <Image
+            src="/assets/icons/user.svg"
+            alt="User"
+            width={24}
+            height={24}
+            className="w-6 h-6"
+          />
         </Link>
         {isUserDropdownOpen && (
           <div className="absolute right-0 top-full pt-2 w-48 z-50">
             <div className="bg-[#153427]/95 backdrop-blur-md p-3 border border-[#f5de7e] text-[#b3a660] text-sm shadow-lg">
-              <p className="px-3 py-2 border-b border-white/20 truncate">Hello, {getDisplayName()}</p>
-              <Link href="/my-account" className="block px-3 py-2 hover:text-white transition-colors cursor-pointer">
+              <p className="px-3 py-2 border-b border-white/20 truncate">
+                Hello, {getDisplayName()}
+              </p>
+              <Link
+                href="/my-account"
+                className="block px-3 py-2 hover:text-white transition-colors cursor-pointer"
+              >
                 My Account
               </Link>
               <button
@@ -321,14 +355,21 @@ const NavbarUserIcon: React.FC<NavbarUserIconProps> = ({
 
   return (
     <Link href="/login" className="hover:opacity-80 transition-opacity">
-      <Image src="/assets/icons/user.svg" alt="User" width={24} height={24} className="w-6 h-6" />
+      <Image
+        src="/assets/icons/user.svg"
+        alt="User"
+        width={24}
+        height={24}
+        className="w-6 h-6"
+      />
     </Link>
   );
 };
 
 const DesktopMeasureNavItem = ({ item }: { item: NavbarNavItem }) => {
   const hasChildren = item.children && item.children.length > 0;
-  const hasDropdownIndicator = hasChildren || (item.isCategory && hasTags(item));
+  const hasDropdownIndicator =
+    hasChildren || (item.isCategory && hasTags(item));
 
   return (
     <span className="h-full px-[19px] !text-[#b3a660] tracking-[1px] text-[16px] inline-flex items-center gap-2 whitespace-nowrap">
@@ -392,7 +433,12 @@ const DesktopMenuItem = ({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         )}
       </Link>
@@ -548,20 +594,40 @@ const MobileSubMenuView = ({
   return (
     <div className="flex flex-col h-full w-full bg-[#f9f9f9]">
       <div className="bg-[#082722] p-4 flex items-center justify-between shadow-md shrink-0">
-        <button onClick={onBack} className="text-[#f2bf42] flex items-center gap-2 text-sm font-medium">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        <button
+          onClick={onBack}
+          className="text-[#f2bf42] flex items-center gap-2 text-sm font-medium"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back
         </button>
-        <h2 className="text-[#f2bf42] font-serif tracking-wide capitalize">{item.label}</h2>
-        <button onClick={onClose} className="text-[#f2bf42] text-xl">✕</button>
+        <h2 className="text-[#f2bf42] font-serif tracking-wide capitalize">
+          {item.label}
+        </h2>
+        <button onClick={onClose} className="text-[#f2bf42] text-xl">
+          ✕
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-[#f5f5f5]">
         {tagGroups.map((group, idx) => (
           <div key={idx} className="mb-6">
-            <h3 className="text-[#b3a660] font-medium text-lg mb-3 capitalize">{group.title}</h3>
+            <h3 className="text-[#b3a660] font-medium text-lg mb-3 capitalize">
+              {group.title}
+            </h3>
             <ul className="space-y-2 pl-1">
               {group.items?.map((tag: string) => (
                 <li key={tag}>
@@ -591,7 +657,9 @@ const MobileSubMenuView = ({
 
         {(loadingProducts || latestProducts.length > 0) && (
           <div className="mt-8 border-t border-gray-200 pt-8">
-            <h3 className="text-[#082722] font-serif text-xl mb-4 tracking-wide">New Arrivals</h3>
+            <h3 className="text-[#082722] font-serif text-xl mb-4 tracking-wide">
+              New Arrivals
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               {loadingProducts ? (
                 <>
@@ -600,7 +668,12 @@ const MobileSubMenuView = ({
                 </>
               ) : (
                 latestProducts.map((product) => (
-                  <Link key={product._id} href={buildProductHref(product)} onClick={onClose} className="block group">
+                  <Link
+                    key={product._id}
+                    href={buildProductHref(product)}
+                    onClick={onClose}
+                    className="block group"
+                  >
                     <div className="aspect-[3/4] relative overflow-hidden rounded-lg mb-2 bg-gray-100">
                       <Image
                         src={getProductImageUrl(product)}
@@ -614,7 +687,9 @@ const MobileSubMenuView = ({
                     <p className="text-sm font-medium text-gray-800 line-clamp-1 group-hover:text-[#b3a660] transition-colors">
                       {product.name}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">Shop Now</p>
+                    <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">
+                      Shop Now
+                    </p>
                   </Link>
                 ))
               )}
@@ -670,11 +745,17 @@ const MobileMenuOverlay = ({
         `}
       >
         {activeItem ? (
-          <MobileSubMenuView item={activeItem} onBack={() => setActiveItem(null)} onClose={onClose} />
+          <MobileSubMenuView
+            item={activeItem}
+            onBack={() => setActiveItem(null)}
+            onClose={onClose}
+          />
         ) : (
           <div className="flex flex-col h-full">
             <div className="flex justify-end p-4 shrink-0">
-              <button onClick={onClose} className="text-[#f2bf42] text-2xl">✕</button>
+              <button onClick={onClose} className="text-[#f2bf42] text-2xl">
+                ✕
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6">
@@ -683,15 +764,29 @@ const MobileMenuOverlay = ({
                   (item.isCategory && hasTags(item)) ||
                   (item.children && item.children.length > 0);
                 return (
-                  <div key={`${item.id}-${idx}`} className="border-b border-[#f2bf42]/20 pb-4 last:border-0">
+                  <div
+                    key={`${item.id}-${idx}`}
+                    className="border-b border-[#f2bf42]/20 pb-4 last:border-0"
+                  >
                     {hasSubMenu ? (
                       <button
                         onClick={() => handleItemClick(item)}
                         className="w-full flex justify-between items-center text-[#f2bf42] text-lg font-medium tracking-wide"
                       >
                         {item.label}
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       </button>
                     ) : (
@@ -708,12 +803,20 @@ const MobileMenuOverlay = ({
               })}
 
               <div className="border-b border-[#f2bf42]/20 pb-4">
-                <Link href="/blog" onClick={onClose} className="block text-[#f2bf42] text-lg font-medium tracking-wide">
+                <Link
+                  href="/blog"
+                  onClick={onClose}
+                  className="block text-[#f2bf42] text-lg font-medium tracking-wide"
+                >
                   Blog
                 </Link>
               </div>
               <div className="border-b border-[#f2bf42]/20 pb-4">
-                <Link href="/contact-us" onClick={onClose} className="block text-[#f2bf42] text-lg font-medium tracking-wide">
+                <Link
+                  href="/contact-us"
+                  onClick={onClose}
+                  className="block text-[#f2bf42] text-lg font-medium tracking-wide"
+                >
                   Contact Us
                 </Link>
               </div>
@@ -754,12 +857,12 @@ const NavbarInner = ({
   const [cartPopupProductName, setCartPopupProductName] = useState("");
   const [isCartPopupHovered, setIsCartPopupHovered] = useState(false);
   const [navbarBottom, setNavbarBottom] = useState(0);
-  const [desktopVisibleItems, setDesktopVisibleItems] = useState<NavbarNavItem[]>(
-    () => initialNavItems,
-  );
-  const [desktopOverflowItems, setDesktopOverflowItems] = useState<NavbarNavItem[]>(
-    [],
-  );
+  const [desktopVisibleItems, setDesktopVisibleItems] = useState<
+    NavbarNavItem[]
+  >(() => initialNavItems);
+  const [desktopOverflowItems, setDesktopOverflowItems] = useState<
+    NavbarNavItem[]
+  >([]);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const desktopNavRef = useRef<HTMLDivElement | null>(null);
@@ -770,7 +873,9 @@ const NavbarInner = ({
   const moreMeasureRef = useRef<HTMLLIElement | null>(null);
   const navItems = useMemo(() => initialNavItems, [initialNavItems]);
   const pathname = usePathname();
-  const wishlistHref = isAuthenticatedUser ? "/wishlist" : "/login?redirect=/wishlist";
+  const wishlistHref = isAuthenticatedUser
+    ? "/wishlist"
+    : "/login?redirect=/wishlist";
 
   const syncNavCounts = useCallback(async () => {
     const authenticated = isAuthenticated();
@@ -1035,7 +1140,8 @@ const NavbarInner = ({
       return currentUser.name.trim().split(" ")[0];
     }
     if (currentUser.phoneNumber) return currentUser.phoneNumber;
-    if (currentUser.email) return currentUser.email.split("@")[0] || currentUser.email;
+    if (currentUser.email)
+      return currentUser.email.split("@")[0] || currentUser.email;
     return "User";
   };
 
@@ -1050,13 +1156,15 @@ const NavbarInner = ({
         <div className="w-full px-6 lg:px-8 xl:px-10">
           <div className="flex justify-between items-center w-full h-full gap-6">
             <Link href="/" className="inline-block shrink-0">
-              <Image
-                src={logoUrl}
-                alt="Studio By Sheetal"
-                width={150}
-                height={50}
-                className="h-[55px] w-auto"
-              />
+              {logoUrl && (
+                <Image
+                  src={logoUrl}
+                  alt="Studio By Sheetal"
+                  width={150}
+                  height={50}
+                  className="h-[55px] w-auto"
+                />
+              )}
             </Link>
 
             <div
@@ -1083,8 +1191,17 @@ const NavbarInner = ({
             </div>
 
             <div className="flex items-center gap-4 shrink-0 self-stretch">
-              <button onClick={toggleSearch} className="hover:opacity-80 transition-opacity cursor-pointer">
-                <Image src="/assets/icons/search.svg" alt="Search" width={24} height={24} className="w-7 h-7" />
+              <button
+                onClick={toggleSearch}
+                className="hover:opacity-80 transition-opacity cursor-pointer"
+              >
+                <Image
+                  src="/assets/icons/search.svg"
+                  alt="Search"
+                  width={24}
+                  height={24}
+                  className="w-7 h-7"
+                />
               </button>
               <NavbarUserIcon
                 isClientMounted={isClientMounted}
@@ -1095,8 +1212,17 @@ const NavbarInner = ({
                 onLogout={handleLogout}
                 getDisplayName={getDisplayName}
               />
-              <Link href={wishlistHref} className="relative hover:opacity-80 transition-opacity">
-                <Image src="/assets/icons/heart.svg" alt="Wishlist" width={24} height={24} className="w-6 h-6" />
+              <Link
+                href={wishlistHref}
+                className="relative hover:opacity-80 transition-opacity"
+              >
+                <Image
+                  src="/assets/icons/heart.svg"
+                  alt="Wishlist"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
                     {wishlistCount}
@@ -1104,8 +1230,17 @@ const NavbarInner = ({
                 )}
               </Link>
               <div className="relative">
-                <Link href="/cart" className="relative hover:opacity-80 transition-opacity">
-                  <Image src="/assets/icons/shopping-bag.png" alt="Cart" width={24} height={24} className="w-7 h-7" />
+                <Link
+                  href="/cart"
+                  className="relative hover:opacity-80 transition-opacity"
+                >
+                  <Image
+                    src="/assets/icons/shopping-bag.png"
+                    alt="Cart"
+                    width={24}
+                    height={24}
+                    className="w-7 h-7"
+                  />
                   {cartItemCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
                       {cartItemCount}
@@ -1165,7 +1300,11 @@ const NavbarInner = ({
             ))}
             <li ref={moreMeasureRef}>
               <DesktopMeasureNavItem
-                item={{ id: "more", label: "More", children: [{ id: "child", label: "child" }] }}
+                item={{
+                  id: "more",
+                  label: "More",
+                  children: [{ id: "child", label: "child" }],
+                }}
               />
             </li>
           </ul>
@@ -1192,12 +1331,24 @@ const NavbarInner = ({
       >
         <div className="container mx-auto px-4 flex justify-between items-center h-[50px]">
           <Link href="/" className="inline-block">
-            <Image src={logoUrl} alt="Studio By Sheetal" width={120} height={40} className="h-[40px] w-auto" />
+            <Image
+              src={logoUrl}
+              alt="Studio By Sheetal"
+              width={120}
+              height={40}
+              className="h-[40px] w-auto"
+            />
           </Link>
 
           <div className="flex items-center gap-4">
             <button onClick={toggleSearch}>
-              <Image src="/assets/icons/search.svg" alt="Search" width={24} height={24} className="w-6 h-6" />
+              <Image
+                src="/assets/icons/search.svg"
+                alt="Search"
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
             </button>
             <NavbarUserIcon
               isClientMounted={isClientMounted}
@@ -1209,7 +1360,13 @@ const NavbarInner = ({
               getDisplayName={getDisplayName}
             />
             <Link href="/cart" className="relative">
-              <Image src="/assets/icons/shopping-bag.svg" alt="Cart" width={24} height={24} className="w-6 h-6 font-bold" />
+              <Image
+                src="/assets/icons/shopping-bag.svg"
+                alt="Cart"
+                width={24}
+                height={24}
+                className="w-6 h-6 font-bold"
+              />
               {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-[#955300] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
                   {cartItemCount}
@@ -1217,7 +1374,13 @@ const NavbarInner = ({
               )}
             </Link>
             <div className="cursor-pointer" onClick={toggleMobileMenu}>
-              <Image src="/assets/icons/hambuger.svg" width={24} height={24} alt="Menu" className="w-6 h-6" />
+              <Image
+                src="/assets/icons/hambuger.svg"
+                width={24}
+                height={24}
+                alt="Menu"
+                className="w-6 h-6"
+              />
             </div>
           </div>
         </div>

@@ -4,8 +4,12 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getBlogs, getBlogImageUrl, Blog } from "../services/blogService";
+import type { BlogsContent } from "../services/homepageService";
 
-const Blogs = () => {
+const DEFAULT_HEADING = "Latest Articles & Blogs";
+
+const Blogs = ({ content }: { content?: BlogsContent }) => {
+  const heading = content?.heading?.trim() || DEFAULT_HEADING;
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +44,7 @@ const Blogs = () => {
       <div className="flex items-center justify-center gap-4">
         <span className="md:block hidden w-12 h-px bg-[#6a3f07]" />
         <h2 className="font-normal text-[#6a3f07] font-[family-name:var(--font-optima)]">
-          Latest Articles & Blogs
+          {heading}
         </h2>
         <span className="md:block hidden w-12 h-px bg-[#6a3f07]" />
       </div>

@@ -25,11 +25,11 @@ export const FaqAccordionItem: React.FC<FaqAccordionItemProps> = ({
     <div className="border-b border-[#c8bba8]">
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full flex items-center justify-between py-6 text-left"
+        className="w-full flex items-center justify-between py-[15px] text-left"
         aria-expanded={open}
       >
         {/* Question — dark near-black, matches desired */}
-        <span className="font-[family-name:var(--font-optima)] text-[16px] font-medium text-[#061210] leading-snug pr-6">
+        <span className="font-[family-name:var(--font-optima)] text-[16px] font-semibold tracking-wide text-[#061210] leading-snug pr-6">
           {question}
         </span>
 

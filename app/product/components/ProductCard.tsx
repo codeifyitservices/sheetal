@@ -96,21 +96,36 @@ const ProductCard = ({
           </div>
 
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-normal text-[16px] text-[#281b00]">
-              ₹{" "}
-              {typeof product.price === "number"
-                ? product.price.toFixed(2)
-                : product.price}
-            </span>
-            <span className="line-through text-gray-400 text-[14px]">
-              ₹{" "}
-              {typeof product.mrp === "number"
-                ? product.mrp.toFixed(2)
-                : product.mrp}
-            </span>
-            <span className="text-[#6a3f0b] text-[16px]">
-              [{product.discount}]
-            </span>
+            {product.mrp !== undefined && product.price !== undefined && Number(product.mrp) !== Number(product.price) ? (
+              <>
+                <span className="font-normal text-[16px] text-[#281b00]">
+                  ₹{" "}
+                  {typeof product.price === "number"
+                    ? product.price.toFixed(2)
+                    : product.price}
+                </span>
+                <span className="line-through text-gray-400 text-[14px]">
+                  ₹{" "}
+                  {typeof product.mrp === "number"
+                    ? product.mrp.toFixed(2)
+                    : product.mrp}
+                </span>
+                {product.discount && (
+                  <span className="text-[#6a3f0b] text-[16px]">
+                    [{product.discount}]
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="font-normal text-[16px] text-[#281b00]">
+                ₹{" "}
+                {typeof product.mrp === "number"
+                  ? product.mrp.toFixed(2)
+                  : typeof product.price === "number"
+                  ? product.price.toFixed(2)
+                  : (product.mrp || product.price)}
+              </span>
+            )}
           </div>
 
           <div className="flex justify-start">
