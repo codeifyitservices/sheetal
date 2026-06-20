@@ -182,7 +182,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
           {/* Left: Filters button */}
           <button
             onClick={handleToggleFilters}
-            className="flex items-center gap-2 text-md font-[family-name:var(--font-montserrat)] font-normal tracking-wider hover:text-[#bd9951] transition-colors cursor-pointer shrink-0"
+            className={`${fromLookbook ? "invisible" : "flex"} items-center gap-2 text-md font-[family-name:var(--font-montserrat)] font-normal tracking-wider hover:text-[#bd9951] transition-colors cursor-pointer shrink-0`}
           >
             <Image src="/assets/icons/filter.svg" alt="Filter" width={20} height={20} />
             Filters
