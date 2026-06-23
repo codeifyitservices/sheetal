@@ -26,6 +26,40 @@ import { buildProductHref } from "../../utils/productRoutes";
 const getStockLimitMessage = (count: number) =>
   `This item only has ${count} left.`;
 
+const MemoizedProductImageGallery = React.memo(ProductImageGallery);
+
+const QuickViewMedia = React.memo(function QuickViewMedia({
+  images,
+  selectedImage,
+  onImageChange,
+  title,
+  isWishlisted,
+  onToggleWishlist,
+  onScrollToSimilar,
+}: {
+  images: string[];
+  selectedImage: string;
+  onImageChange: (value: string) => void;
+  title: string;
+  isWishlisted: boolean;
+  onToggleWishlist: () => void;
+  onScrollToSimilar: () => void;
+}) {
+  return (
+    <div className="w-full sm:w-[52%] shrink-0 p-10">
+      <MemoizedProductImageGallery
+        images={images}
+        selectedImage={selectedImage}
+        onImageChange={onImageChange}
+        title={title}
+        isWishlisted={isWishlisted}
+        onToggleWishlist={onToggleWishlist}
+        onScrollToSimilar={onScrollToSimilar}
+      />
+    </div>
+  );
+});
+
 interface QuickViewProps {
   productSlug: string | null;
   onClose: () => void;
@@ -40,6 +74,8 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
   const [selectedVariantId, setSelectedVariantId] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const hasIncrementedViewRef = useRef(false);
+  const selectedSizeRef = useRef("");
+  const selectedColorRef = useRef("");
   // Removed lowestPrice and lowestMrp states
   const {
     isProductInWishlist,
@@ -50,6 +86,14 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
   } = useWishlist();
   const { addToCart } = useCart();
   const router = useRouter();
+
+  useEffect(() => {
+    selectedSizeRef.current = selectedSize;
+  }, [selectedSize]);
+
+  useEffect(() => {
+    selectedColorRef.current = selectedColor;
+  }, [selectedColor]);
 
   const getProduct = React.useCallback(async () => {
     if (!productSlug) return;
@@ -66,15 +110,19 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
         const mainImg = getProductImageUrl(response.data);
         setSelectedImage(mainImg);
 
+        const currentSelectedColor = selectedColorRef.current;
+        const currentSelectedSize = selectedSizeRef.current;
+
         const matchedVariant =
-          selectedColor
+          currentSelectedColor
             ? response.data.variants?.find(
-                (v: ProductVariant) => v.color?.name === selectedColor,
+                (v: ProductVariant) => v.color?.name === currentSelectedColor,
               )
             : null;
-        const matchedSize = selectedSize
+        const matchedSize = currentSelectedSize
           ? matchedVariant?.sizes.find(
-              (s: ProductVariant["sizes"][number]) => s.name === selectedSize,
+              (s: ProductVariant["sizes"][number]) =>
+                s.name === currentSelectedSize,
             ) || null
           : null;
 
@@ -133,7 +181,7 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
     } finally {
       setLoading(false);
     }
-  }, [productSlug, selectedColor, selectedSize]);
+    }, [productSlug]);
 
   useEffect(() => {
     if (productSlug) {
@@ -365,8 +413,11 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
   const selectedSizeInfo =
     selectedVariant?.sizes.find((size) => size.name === selectedSize) || null;
   const selectedAvailableStock = selectedSizeInfo?.stock ?? 0;
-  const galleryImages = getVariantGalleryUrls(product, selectedVariant);
-  const handleQuantityChange = (rawValue: string) => {
+  const galleryImages = React.useMemo(
+    () => getVariantGalleryUrls(product, selectedVariant),
+    [product, selectedVariant],
+  );
+  const handleQuantityChange = React.useCallback((rawValue: string) => {
     const parsedQuantity = Math.max(1, parseInt(rawValue, 10) || 1);
     const normalizedMaxQuantity = Math.max(1, selectedAvailableStock);
 
@@ -375,7 +426,7 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
     }
 
     setQuantity(Math.min(parsedQuantity, normalizedMaxQuantity));
-  };
+  }, [selectedAvailableStock]);
 
   useEffect(() => {
     if (selectedAvailableStock <= 0) {
@@ -397,49 +448,57 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
     return null;
   }
 
-  const allUniqueColors: { name: string; image: string }[] = [];
-  const allUniqueSizeNames = new Set<string>();
-  const colorToAvailableSizesMap = new Map<string, Set<string>>();
+  const { allUniqueColors, allSizesForDisplay, colorToAvailableSizesMap } =
+    React.useMemo(() => {
+      const colors: { name: string; image: string }[] = [];
+      const sizeNames = new Set<string>();
+      const sizesByColor = new Map<string, Set<string>>();
 
-  product?.variants?.forEach((v) => {
-    if (
-      v.color &&
-      typeof v.color === "object" &&
-      v.color.name &&
-      !allUniqueColors.some((c) => c.name === v.color!.name)
-    ) {
-      allUniqueColors.push({
-        name: v.color!.name,
-        image: getApiImageUrl(v.v_image, getProductImageUrl(product)),
-      });
-    }
+      product?.variants?.forEach((v) => {
+        if (
+          v.color &&
+          typeof v.color === "object" &&
+          v.color.name &&
+          !colors.some((c) => c.name === v.color!.name)
+        ) {
+          colors.push({
+            name: v.color!.name,
+            image: getApiImageUrl(v.v_image, getProductImageUrl(product)),
+          });
+        }
 
-    if (Array.isArray(v.sizes)) {
-      v.sizes.forEach((s) => {
-        if (s?.name) {
-          allUniqueSizeNames.add(s.name);
-          if (
-            v.color &&
-            typeof v.color === "object" &&
-            v.color.name &&
-            s.stock > 0
-          ) {
-            if (!colorToAvailableSizesMap.has(v.color!.name)) {
-              colorToAvailableSizesMap.set(v.color!.name, new Set<string>());
+        if (Array.isArray(v.sizes)) {
+          v.sizes.forEach((s) => {
+            if (s?.name) {
+              sizeNames.add(s.name);
+              if (
+                v.color &&
+                typeof v.color === "object" &&
+                v.color.name &&
+                s.stock > 0
+              ) {
+                if (!sizesByColor.has(v.color!.name)) {
+                  sizesByColor.set(v.color!.name, new Set<string>());
+                }
+                sizesByColor.get(v.color!.name)?.add(s.name);
+              }
             }
-            colorToAvailableSizesMap.get(v.color!.name)?.add(s.name);
-          }
+          });
         }
       });
-    }
-  });
 
-  const allSizesForDisplay = Array.from(allUniqueSizeNames);
+      return {
+        allUniqueColors: colors,
+        allSizesForDisplay: Array.from(sizeNames),
+        colorToAvailableSizesMap: sizesByColor,
+      };
+    }, [product]);
+
   const hasDescription = Boolean(product?.shortDescription?.trim());
   const hasColors = allUniqueColors.length > 0;
   const hasSizes = allSizesForDisplay.length > 0;
 
-  const handleColorChange = (color: { name: string; image: string }) => {
+  const handleColorChange = React.useCallback((color: { name: string; image: string }) => {
     setSelectedColor(color.name);
     const nextVariant =
       product?.variants.find((variant) => variant.color?.name === color.name) ||
@@ -463,13 +522,18 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
     ) {
       setSelectedSize(Array.from(availableSizesForNewColor)[0]);
     }
-  };
+  }, [colorToAvailableSizesMap, product, selectedSize]);
 
-  const handleViewSimilar = () => {
+  const handleViewSimilar = React.useCallback(() => {
     if (!product) return;
     onClose();
     router.push(buildProductHref(product, { scroll: "similar" }));
-  };
+  }, [onClose, product, router]);
+
+  const handleToggleWishlist = React.useCallback(() => {
+    if (!product) return;
+    toggleProductInWishlist(product._id);
+  }, [product, toggleProductInWishlist]);
 
   return (
     <div
@@ -497,17 +561,15 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
           ) : product ? (
             <div className="flex flex-col sm:flex-row">
               {/* Left — image gallery, no padding so it bleeds to edge */}
-              <div className="w-full sm:w-[52%] shrink-0 p-10">
-                <ProductImageGallery
-                  images={galleryImages}
-                  selectedImage={selectedImage || galleryImages[0]}
-                  onImageChange={setSelectedImage}
-                  title={product.name}
-                  isWishlisted={isProductInWishlist(product._id)}
-                  onToggleWishlist={() => toggleProductInWishlist(product._id)}
-                  onScrollToSimilar={handleViewSimilar}
-                />
-              </div>
+              <QuickViewMedia
+                images={galleryImages}
+                selectedImage={selectedImage || galleryImages[0]}
+                onImageChange={setSelectedImage}
+                title={product.name}
+                isWishlisted={isProductInWishlist(product._id)}
+                onToggleWishlist={handleToggleWishlist}
+                onScrollToSimilar={handleViewSimilar}
+              />
 
               {/* Right — product details */}
               <div className="w-full sm:w-[48%] flex flex-col text-left p-6 px-10 gap-4">

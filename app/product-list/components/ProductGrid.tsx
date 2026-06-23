@@ -77,7 +77,7 @@ const ProductCard: React.FC<{
           </div>
         </Link>
 
-        <div className="absolute top-2 right-2 flex flex-col gap-3 transform translate-x-12 opacity-0 transition-all duration-500 group-hover:translate-x-0 group-hover:opacity-100">
+        <div className="absolute top-2 right-2 flex flex-col gap-3">
           <button
             className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center group/icon cursor-pointer"
             onClick={() => onToggleWishlist(product._id)}

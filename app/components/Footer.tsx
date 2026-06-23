@@ -112,34 +112,118 @@ const convertOldToNew = (old: RawFooterBlock[]): FooterBlock[] => {
 
 async function getFooterData(): Promise<{ layout: FooterBlock[]; whatsapp?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/settings`, {
-      next: { revalidate: 300 },
-    });
-    const settingsJson = await response.json();
-    const settings = settingsJson?.data || {};
+    let settings: Record<string, any> = {};
+    let footerPages: {
+      _id: string;
+      title: string;
+      slug: string;
+      footerPlacement: string;
+    }[] = [];
+
+    try {
+      const settingsResponse = await fetch(`${API_BASE_URL}/settings`, {
+        next: { revalidate: 300 },
+      });
+      const settingsJson = await settingsResponse.json();
+      settings = settingsJson?.data || {};
+    } catch {
+      settings = {};
+    }
+
+    try {
+      const pagesResponse = await fetch(`${API_BASE_URL}/pages/public/footer`, {
+        next: { revalidate: 300 },
+      });
+      const pagesJson = await pagesResponse.json();
+      footerPages = Array.isArray(pagesJson?.pages) ? pagesJson.pages : [];
+    } catch {
+      footerPages = [];
+    }
+
     const raw = (settings.footerLayout || []) as RawFooterBlock[];
     const whatsapp = settings.supportWhatsapp;
 
+    const appendStaticPages = (layout: FooterBlock[]): FooterBlock[] => {
+      const nextLayout = JSON.parse(JSON.stringify(layout)) as FooterBlock[];
+      nextLayout.forEach((block) => {
+        if (block.type === "double") {
+          block.columns.forEach((column) => {
+            column.links = column.links.filter(
+              (link) => !String(link.id || "").startsWith("static-page-"),
+            );
+          });
+        } else {
+          block.links = block.links.filter(
+            (link) => !String(link.id || "").startsWith("static-page-"),
+          );
+        }
+      });
+
+      if (!footerPages.length) return nextLayout;
+
+      const doubleBlock = nextLayout.find(
+        (block): block is Extract<FooterBlock, { type: "double" }> =>
+          block.type === "double",
+      );
+      const singleBlock = nextLayout.find(
+        (block): block is Extract<FooterBlock, { type: "single" }> =>
+          block.type === "single",
+      );
+
+      footerPages.forEach((page) => {
+        if (page.footerPlacement === "footer_column_3") {
+          if (!singleBlock) return;
+          singleBlock.hidden = false;
+          const href = `/${page.slug}`;
+          if (singleBlock.links.some((link) => link.href === href)) return;
+          singleBlock.links.push({
+            id: `static-page-${page._id}`,
+            label: page.title,
+            href,
+          });
+          return;
+        }
+
+        if (!doubleBlock) return;
+        doubleBlock.hidden = false;
+        const columnIndex =
+          page.footerPlacement === "footer_column_2" ? 1 : 0;
+        const column = doubleBlock.columns[columnIndex];
+        if (!column) return;
+
+        column.hidden = false;
+        const href = `/${page.slug}`;
+        if (column.links.some((link) => link.href === href)) return;
+        column.links.push({
+          id: `static-page-${page._id}`,
+          label: page.title,
+          href,
+        });
+      });
+
+      return nextLayout;
+    };
+
     if (!Array.isArray(raw) || raw.length === 0) {
-      return { layout: defaultLayout, whatsapp };
+      return { layout: appendStaticPages(defaultLayout), whatsapp };
     }
 
     const hasNavbarStructure =
       raw[0].hasOwnProperty("isDroppable") ||
       raw[0].hasOwnProperty("children");
     if (hasNavbarStructure) {
-      return { layout: defaultLayout, whatsapp };
+      return { layout: appendStaticPages(defaultLayout), whatsapp };
     }
 
     if (isNewFormat(raw)) {
-      return { layout: raw, whatsapp };
+      return { layout: appendStaticPages(raw), whatsapp };
     }
 
     if (isOldFlatFormat(raw)) {
-      return { layout: convertOldToNew(raw), whatsapp };
+      return { layout: appendStaticPages(convertOldToNew(raw)), whatsapp };
     }
 
-    return { layout: defaultLayout, whatsapp };
+    return { layout: appendStaticPages(defaultLayout), whatsapp };
   } catch {
     return { layout: defaultLayout };
   }

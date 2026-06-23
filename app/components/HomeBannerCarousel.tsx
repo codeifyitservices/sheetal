@@ -264,7 +264,7 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
         </div>
 
         <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-24">
-          <Link href="/" className="pointer-events-auto">
+          {/* <Link href="/" className="pointer-events-auto">
             <Image
               src={logoUrl}
               alt="Studio By Sheetal"
@@ -274,7 +274,7 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
               priority
               quality={75}
             />
-          </Link>
+          </Link> */}
         </div>
       </div>
 

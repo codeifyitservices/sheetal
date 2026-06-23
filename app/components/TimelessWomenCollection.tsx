@@ -19,21 +19,31 @@ interface CenterContent {
   buttonText?: string;
   buttonLink?: string;
   categoryLink?: string;
+  categoryLinks?: string[];
 }
 
 const DEFAULT_CENTER: CenterContent = {
-  label: "Exclusive Deal • Few Days Left",
+  label: "Exclusive Deal - Few Days Left",
   heading: "Timeless Women's Collection",
   description:
     "<p>Beautifully crafted pieces blending comfort, elegance, and effortless everyday style.</p>",
   buttonText: "View More",
   buttonLink: "#",
   categoryLink: "",
+  categoryLinks: [],
 };
 
+const defaultImages: SliderImage[] = [
+  { url: "/assets/deals1.jpg" },
+  { url: "/assets/deals2.jpg" },
+  { url: "/assets/deals3.jpg" },
+];
+
 const TimelessWomenCollection = () => {
-  const [sliderImages, setSliderImages] = useState<SliderImage[]>([]);
-  const [centerContent, setCenterContent] = useState<CenterContent>(DEFAULT_CENTER);
+  const [leftSliderImages, setLeftSliderImages] = useState<SliderImage[]>([]);
+  const [rightSliderImages, setRightSliderImages] = useState<SliderImage[]>([]);
+  const [centerContent, setCenterContent] =
+    useState<CenterContent>(DEFAULT_CENTER);
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -43,11 +53,17 @@ const TimelessWomenCollection = () => {
         const data = await res.json();
         if (data.success && data.lookbook) {
           const lb = data.lookbook;
-          const imgs: SliderImage[] =
-            lb.sliderImages?.length > 0
-              ? lb.sliderImages
-              : lb.leftSliderImages || [];
-          setSliderImages(imgs);
+          const fallbackImages: SliderImage[] = lb.sliderImages || [];
+          setLeftSliderImages(
+            lb.leftSliderImages?.length > 0
+              ? lb.leftSliderImages
+              : fallbackImages,
+          );
+          setRightSliderImages(
+            lb.rightSliderImages?.length > 0
+              ? lb.rightSliderImages
+              : fallbackImages,
+          );
           if (lb.centerContent) {
             setCenterContent({ ...DEFAULT_CENTER, ...lb.centerContent });
           }
@@ -59,55 +75,36 @@ const TimelessWomenCollection = () => {
     fetchLookbook();
   }, []);
 
-  const defaultImages: SliderImage[] = [
-    { url: "/assets/deals1.jpg" },
-    { url: "/assets/deals2.jpg" },
-    { url: "/assets/deals3.jpg" },
-  ];
+  const leftSliderData =
+    leftSliderImages.length > 0 ? leftSliderImages : defaultImages;
+  const rightSliderData =
+    rightSliderImages.length > 0 ? rightSliderImages : defaultImages;
+  const maxSlideCount = Math.max(leftSliderData.length, rightSliderData.length);
+  const buttonHref =
+    getLookbookHref(
+      centerContent.categoryLink,
+      centerContent.buttonLink,
+      centerContent.categoryLinks,
+    ) || "#";
 
-  const sliderData: SliderImage[] =
-    sliderImages.length > 0 ? sliderImages : defaultImages;
-
-  // Single shared auto-advance — both sliders stay in sync
   useEffect(() => {
-    if (sliderData.length <= 1) return;
+    if (maxSlideCount <= 1) return;
     const id = window.setInterval(() => {
-      setActiveIndex((c) => (c + 1) % sliderData.length);
+      setActiveIndex((current) => (current + 1) % maxSlideCount);
     }, 3000);
     return () => window.clearInterval(id);
-  }, [sliderData.length]);
-
-  const currentImage = sliderData[activeIndex];
-
-  // Center banner href: active image's category → center's category → buttonLink
-  // Append ?fromLookbook=true so the category page filters to discounted products.
-  const bannerHref =
-    currentImage?.categoryLink
-      ? `/${currentImage.categoryLink}?fromLookbook=true`
-      : centerContent.categoryLink
-      ? `/${centerContent.categoryLink}?fromLookbook=true`
-      : centerContent.buttonLink || "#";
+  }, [maxSlideCount]);
 
   return (
     <div className="flex w-full justify-center bg-[#fbfbfb] px-4 py-6 sm:px-6">
       <div className="container px-0">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch justify-items-center">
+          <SliderTrack slides={leftSliderData} activeIndex={activeIndex} />
 
-          {/* ── Left Slider ─────────────────────────────────────────────── */}
-          <SliderTrack
-            slides={sliderData}
-            activeIndex={activeIndex}
-            centerContent={centerContent}
-          />
-
-          {/* ── Center Banner ────────────────────────────────────────────── */}
           <div className="w-full max-w-[400px] h-[320px] flex relative">
             <div className="hidden md:block absolute top-20 -left-5 h-0.5 w-15 bg-[#a2690f]" />
             <div className="hidden md:block absolute top-20 -right-5 h-0.5 w-15 bg-[#a2690f]" />
-            <Link
-              href={bannerHref}
-              className="flex w-full h-full border border-[#FFC107] rounded-2xl items-center justify-center hover:shadow-xl transition-shadow duration-300"
-            >
+            <div className="flex w-full h-full border border-[#FFC107] rounded-2xl items-center justify-center hover:shadow-xl transition-shadow duration-300">
               <div className="px-5 text-center md:px-8">
                 {centerContent.label && (
                   <p className="text-[14px] font-[family-name:var(--font-montserrat)] mb-4 text-black">
@@ -122,63 +119,50 @@ const TimelessWomenCollection = () => {
                 {centerContent.description && (
                   <div
                     className="text-[15px] text-black font-[family-name:var(--font-montserrat)] mb-4 max-w-xs mx-auto"
-                    dangerouslySetInnerHTML={{ __html: centerContent.description }}
+                    dangerouslySetInnerHTML={{
+                      __html: centerContent.description,
+                    }}
                   />
                 )}
                 {centerContent.buttonText && (
-                  <span className="inline-block text-[16px] uppercase tracking-[0.2em] text-gray-800 border-y py-2 px-6 rounded border-gray-800 hover:text-[#cc8a00] hover:border-[#cc8a00] transition-colors">
+                  <Link
+                    href={buttonHref}
+                    className="inline-block text-[16px] uppercase tracking-[0.2em] text-gray-800 border-y py-2 px-6 rounded border-gray-800 hover:text-[#cc8a00] hover:border-[#cc8a00] transition-colors"
+                  >
                     {centerContent.buttonText}
-                  </span>
+                  </Link>
                 )}
               </div>
-            </Link>
+            </div>
           </div>
 
-          {/* ── Right Slider ─────────────────────────────────────────────── */}
-          <SliderTrack
-            slides={sliderData}
-            activeIndex={activeIndex}
-            centerContent={centerContent}
-          />
-
+          <SliderTrack slides={rightSliderData} activeIndex={activeIndex} />
         </div>
       </div>
     </div>
   );
 };
 
-// ─── Reusable slider track ────────────────────────────────────────────────────
-// Uses translate3d for the slide animation AND pointer-events:none on off-screen
-// slides so they never intercept clicks even though overflow:hidden doesn't
-// clip pointer events in browsers.
-
 interface SliderTrackProps {
   slides: SliderImage[];
   activeIndex: number;
-  centerContent: CenterContent;
 }
 
-function SliderTrack({ slides, activeIndex, centerContent }: SliderTrackProps) {
+function SliderTrack({ slides, activeIndex }: SliderTrackProps) {
+  const normalizedActiveIndex = slides.length ? activeIndex % slides.length : 0;
+
   return (
     <div className="w-full max-w-[400px] h-auto">
-      {/* overflow-hidden clips the visual strip */}
       <div className="overflow-hidden rounded-lg">
-        {/* The sliding strip — moves left by activeIndex * 100% */}
         <div
           className="flex flex-row flex-nowrap transition-transform duration-500 ease-out"
-          style={{ transform: `translate3d(-${activeIndex * 100}%, 0, 0)` }}
+          style={{
+            transform: `translate3d(-${normalizedActiveIndex * 100}%, 0, 0)`,
+          }}
         >
           {slides.map((img, i) => {
-            const isActive = i === activeIndex;
-
-            // Image href: image's own category → center category → buttonLink → nothing
-            // Append ?fromLookbook=true so the category page filters to discounted products.
-            const href = img.categoryLink
-              ? `/${img.categoryLink}?fromLookbook=true`
-              : centerContent.categoryLink
-              ? `/${centerContent.categoryLink}?fromLookbook=true`
-              : centerContent.buttonLink || null;
-
+            const isActive = i === normalizedActiveIndex;
+            const href = getLookbookHref(img.categoryLink);
             const imgEl = (
               <div className="relative w-full h-[310px]">
                 <Image
@@ -192,13 +176,9 @@ function SliderTrack({ slides, activeIndex, centerContent }: SliderTrackProps) {
             );
 
             return (
-              // Each slide takes exactly 100% of the container width and never shrinks
               <div
                 key={i}
                 className="min-w-full w-full flex-shrink-0"
-                // ← KEY FIX: only the visible slide can receive pointer events.
-                // overflow:hidden clips visuals but NOT pointer events in browsers,
-                // so off-screen slides would eat clicks without this.
                 style={{ pointerEvents: isActive ? "auto" : "none" }}
               >
                 {href ? (
@@ -215,6 +195,33 @@ function SliderTrack({ slides, activeIndex, centerContent }: SliderTrackProps) {
       </div>
     </div>
   );
+}
+
+function getLookbookHref(
+  categoryLink?: string,
+  fallbackLink?: string,
+  categoryLinks?: string[],
+) {
+  const selectedCategories =
+    categoryLinks?.filter((slug) => Boolean(slug?.trim())) || [];
+
+  if (selectedCategories.length > 0) {
+    const params = new URLSearchParams({
+      fromLookbook: "true",
+      categories: selectedCategories.join(","),
+    });
+    return `/product-list?${params.toString()}`;
+  }
+
+  if (fallbackLink?.startsWith("/product-list")) {
+    return fallbackLink;
+  }
+
+  if (categoryLink) {
+    return `/${categoryLink}?fromLookbook=true`;
+  }
+
+  return fallbackLink || null;
 }
 
 export default TimelessWomenCollection;

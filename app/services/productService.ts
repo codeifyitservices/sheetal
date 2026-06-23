@@ -127,7 +127,7 @@ export interface ProductQueryParams {
   limit?: number;
   search?: string;
   sort?: string;
-  category?: string; // ID
+  category?: string; // ID or comma-separated IDs
   subCategory?: string; // String
   brand?: string;
   status?: string;

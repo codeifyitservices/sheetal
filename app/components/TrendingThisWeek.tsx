@@ -6,10 +6,10 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   fetchTrendingProducts,
+  getProductHoverImageUrl,
   getProductImageUrl,
   Product,
 } from "../services/productService";
-import { getApiImageUrl } from "../services/api";
 import { useWishlist } from "../hooks/useWishlist";
 import WishlistLoginModal from "./WishlistLoginModal";
 import { buildProductHref } from "../utils/productRoutes";
@@ -58,7 +58,7 @@ function ProductCard({
           </div>
         )}
 
-        <div className="absolute top-2 right-2 flex flex-col gap-3 transform translate-x-12 opacity-0 transition-all duration-500 group-hover:translate-x-0 group-hover:opacity-100 z-20">
+        <div className="absolute top-2 right-2 flex flex-col gap-3 z-20">
           <button
             className="w-10 h-10 rounded-full flex items-center justify-center group/icon cursor-pointer"
             onClick={(e) => {
@@ -135,7 +135,7 @@ function ProductCard({
                 </span>
               </>
             ) : (
-              <span className="text-[clamp(11px,5cqw,18px)] text-[#281b00] font-bold whitespace-nowrap">
+              <span className="text-[16px] text-[#281b00] font-medium whitespace-nowrap">
                 {product.mrp}
               </span>
             )}
@@ -238,9 +238,7 @@ const TrendingThisWeek = ({
       categorySlug: p.category?.slug,
       name: p.name,
       image: getProductImageUrl(p),
-      hoverImage: p.hoverImage?.url
-        ? getApiImageUrl(p.hoverImage.url)
-        : getProductImageUrl(p),
+      hoverImage: getProductHoverImageUrl(p, getProductImageUrl(p)),
       price: `₹ ${minPrice.toFixed(2)}`,
       mrp: `₹ ${relatedMrp.toFixed(2)}`,
       discount: discountStr,
