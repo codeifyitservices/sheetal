@@ -72,9 +72,15 @@ const AddressPageInner = () => {
   const [buyNowCouponCode, setBuyNowCouponCode] = useState("");
   const [buyNowCouponDiscount, setBuyNowCouponDiscount] = useState(0);
   const [buyNowCouponError, setBuyNowCouponError] = useState<string | null>(null);
+  const [buyNowCouponMeta, setBuyNowCouponMeta] = useState<unknown>(null);
   const [buyNowBogoMessage, setBuyNowBogoMessage] = useState<string | null>(null);
   const [buyNowApplicableCategories, setBuyNowApplicableCategories] = useState<string[]>([]);
   const autoRecoveryCouponAppliedRef = useRef<string | null>(null);
+  const [couponPaymentModal, setCouponPaymentModal] = useState<{
+    paymentMethod: "COD" | "Prepaid";
+    message: string;
+  } | null>(null);
+  const pendingPaymentActionRef = useRef<(() => Promise<void>) | null>(null);
 
   const [platformFee, setPlatformFee] = useState(0);
   const [shippingCharges, setShippingCharges] = useState(0);
@@ -83,6 +89,49 @@ const AddressPageInner = () => {
 
   const isValidEmail = (value: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+  const normalizeCouponPaymentMethod = (value: unknown): "Both" | "Prepaid" | "COD" => {
+    const normalized = String(value || "")
+      .trim()
+      .toLowerCase();
+
+    if (["prepaid", "prepaid orders", "online", "paid"].includes(normalized)) {
+      return "Prepaid";
+    }
+
+    if (["cod", "cash on delivery"].includes(normalized)) {
+      return "COD";
+    }
+
+    return "Both";
+  };
+
+  const getCouponPaymentMismatchMessage = (
+    couponMetaValue: unknown,
+    paymentMethod: "COD" | "Prepaid",
+  ) => {
+    const couponPaymentMethod = normalizeCouponPaymentMethod(
+      (couponMetaValue as { paymentMethod?: unknown } | null)?.paymentMethod,
+    );
+
+    if (couponPaymentMethod === "Both" || couponPaymentMethod === paymentMethod) {
+      return null;
+    }
+
+    return paymentMethod === "COD"
+      ? "This coupon can not be applied with COD orders"
+      : "This coupon can not be applied with prepaid orders";
+  };
+
+  const isCouponPaymentRestrictionMessage = (message?: string) => {
+    const normalized = String(message || "").toLowerCase();
+    return (
+      normalized.includes("coupon") &&
+      normalized.includes("can not be applied") &&
+      (normalized.includes("cod orders") ||
+        normalized.includes("prepaid orders"))
+    );
+  };
 
   // ── Buy Now param ─────────────────────────────────────────────────────────
   const recoverySource = searchParams.get("recoverySource")?.trim();
@@ -162,6 +211,7 @@ const AddressPageInner = () => {
     : totalMrp - totalDiscount;
 
   const effectiveCouponCode = isBuyNow ? buyNowCouponCode : couponCode;
+  const effectiveCouponMeta = isBuyNow ? buyNowCouponMeta : couponMeta;
   const effectiveCouponDiscount = isBuyNow
     ? buyNowCouponDiscount
     : couponDiscount;
@@ -173,6 +223,7 @@ const AddressPageInner = () => {
 
   const netItemsTotal = Math.max(0, grossItemsTotal - effectiveCouponDiscount);
   const totalAmount = netItemsTotal + shippingCharges + platformFee;
+  const totalWithoutCoupon = totalAmount + effectiveCouponDiscount;
 
   useEffect(() => {
     if (!isBuyNow) {
@@ -343,9 +394,11 @@ const AddressPageInner = () => {
       if (response.success) {
         const appliedCouponCode = String(response.data?.couponCode || normalizedCode);
         const discountAmount = Number(response.data?.discount) || 0;
+        const responseMeta = response.data as Record<string, unknown>;
 
         setBuyNowCouponCode(appliedCouponCode);
         setBuyNowCouponDiscount(discountAmount);
+        setBuyNowCouponMeta(responseMeta);
 
         if (response.data?.applicableIds && response.data.applicableIds.length > 0) {
           setBuyNowApplicableCategories(response.data.applicableIds);
@@ -367,6 +420,7 @@ const AddressPageInner = () => {
       } else {
         setBuyNowCouponCode("");
         setBuyNowCouponDiscount(0);
+        setBuyNowCouponMeta(null);
         setBuyNowCouponError(response.message || "Invalid coupon code.");
         toast.error(response.message || "Invalid coupon code.");
       }
@@ -374,6 +428,7 @@ const AddressPageInner = () => {
       console.error("Error applying buy-now coupon:", error);
       setBuyNowCouponCode("");
       setBuyNowCouponDiscount(0);
+      setBuyNowCouponMeta(null);
       setBuyNowCouponError("Could not apply coupon. Please try again.");
       toast.error("Could not apply coupon. Please try again.");
     }
@@ -459,6 +514,7 @@ const AddressPageInner = () => {
       setBuyNowCouponCode("");
       setBuyNowCouponDiscount(0);
       setBuyNowCouponError(null);
+      setBuyNowCouponMeta(null);
       setBuyNowBogoMessage(null);
       setBuyNowApplicableCategories([]);
       toast.success("Coupon removed");
@@ -468,7 +524,39 @@ const AddressPageInner = () => {
     removeCoupon();
   };
 
-  const handlePayOnline = async () => {
+  const clearAppliedCoupon = () => {
+    if (isBuyNow) {
+      setCouponInput("");
+      setBuyNowCouponCode("");
+      setBuyNowCouponDiscount(0);
+      setBuyNowCouponError(null);
+      setBuyNowCouponMeta(null);
+      setBuyNowBogoMessage(null);
+      setBuyNowApplicableCategories([]);
+      return;
+    }
+
+    removeCoupon({ silent: true });
+  };
+
+  const submitPayment = async (
+    paymentMethod: "COD" | "Prepaid",
+    couponPayload?: {
+      couponId?: string;
+      couponCode?: string;
+      discountPrice?: number;
+    },
+    bypassCouponRestriction = false,
+  ) => {
+    const openCouponPaymentModal = (message: string) => {
+      pendingPaymentActionRef.current = () =>
+        submitPayment(paymentMethod, undefined, true);
+      setCouponPaymentModal({
+        paymentMethod,
+        message,
+      });
+    };
+
     const normalizedEmail = userEmail.trim();
     if (!normalizedEmail) {
       toast.error("Please enter your email address.");
@@ -498,45 +586,121 @@ const AddressPageInner = () => {
       return;
     }
 
+    if (
+      !bypassCouponRestriction &&
+      couponPayload?.couponCode
+    ) {
+      const restrictionMessage = getCouponPaymentMismatchMessage(
+        effectiveCouponMeta,
+        paymentMethod,
+      );
+      if (restrictionMessage) {
+        openCouponPaymentModal(restrictionMessage);
+        return;
+      }
+    }
+
     const shippingAddress = buildShippingAddress(selectedAddress);
     const billingAddress = buildBillingAddress(billingSelectedAddress);
+    const couponToSend = couponPayload?.couponCode ? couponPayload : undefined;
 
     try {
       setIsSubmitting(true);
       toast.loading("Initiating payment...");
-      const response = await createRazorpayPaymentLink(
-        selectedShippingAddressId,
-        shippingAddress,
-        billingAddress,
-        normalizedEmail,
-        isBuyNow ? normalizedActiveItems : undefined,
-        isBuyNow ? undefined : normalizedActiveItems,
-        effectiveCouponCode
-          ? {
-              couponId: (couponMeta as { couponId?: string } | null)?.couponId,
-              couponCode: effectiveCouponCode,
-              discountPrice: effectiveCouponDiscount,
-            }
-          : undefined,
-        recoveryAttribution || undefined,
-      );
-      toast.dismiss();
-      const maybeOrderId =
-        response?.data?.orderId ||
-        response?.data?._id ||
-        response?.data?.referenceId ||
-        response?.data?.reference_id ||
-        response?.data?.order?.id ||
-        response?.data?.order?._id;
+      if (paymentMethod === "Prepaid") {
+        const response = await createRazorpayPaymentLink(
+          selectedShippingAddressId,
+          shippingAddress,
+          billingAddress,
+          normalizedEmail,
+          isBuyNow ? normalizedActiveItems : undefined,
+          isBuyNow ? undefined : normalizedActiveItems,
+          couponToSend,
+          recoveryAttribution || undefined,
+        );
+        toast.dismiss();
+        const maybeOrderId =
+          response?.data?.orderId ||
+          response?.data?._id ||
+          response?.data?.referenceId ||
+          response?.data?.reference_id ||
+          response?.data?.order?.id ||
+          response?.data?.order?._id;
 
-      if (maybeOrderId) {
-        sessionStorage.setItem("checkout_invoice_order_id", String(maybeOrderId));
-      }
+        if (maybeOrderId) {
+          sessionStorage.setItem("checkout_invoice_order_id", String(maybeOrderId));
+        }
 
-      if (response?.success && response?.data?.short_url) {
-        window.location.href = response.data.short_url;
+        if (response?.success && response?.data?.short_url) {
+          window.location.href = response.data.short_url;
+        } else if (isCouponPaymentRestrictionMessage(response?.message)) {
+          openCouponPaymentModal(response.message);
+        } else {
+          toast.error(response.message || "Failed to create payment link");
+        }
       } else {
-        toast.error(response.message || "Failed to create payment link");
+        const orderItems = normalizedActiveItems.map((item) => ({
+          product: item.product._id,
+          variantId: item.variantId,
+          name: item.product.name,
+          image: item.product.mainImage?.url || item.variantImage || "",
+          price: item.discountPrice || item.price,
+          quantity: item.quantity,
+          gstPercent: item.product?.gstPercent || 0,
+          variant: {
+            size: item.size,
+            color: item.color,
+            v_sku:
+              ("variantSku" in item && typeof item.variantSku === "string"
+                ? item.variantSku
+                : item.product?.sku) || "",
+          },
+        }));
+
+        const totalPayable = netItemsTotal + shippingCharges + platformFee;
+        const response = await createCODOrder(
+          shippingAddress,
+          billingAddress,
+          orderItems,
+          normalizedEmail,
+          {
+            itemsPrice: grossItemsTotal,
+            shippingPrice: shippingCharges,
+            taxPrice: platformFee,
+            totalPrice: totalPayable,
+          },
+          isBuyNow ? normalizedActiveItems : undefined,
+          isBuyNow ? undefined : normalizedActiveItems,
+          couponToSend,
+          recoveryAttribution || undefined,
+        );
+        toast.dismiss();
+        if (response?.success) {
+          const maybeOrderId =
+            response?.data?.orderId ||
+            response?.data?._id ||
+            response?.data?.id ||
+            response?.data?.order?.id ||
+            response?.data?.order?._id;
+
+          if (maybeOrderId) {
+            sessionStorage.setItem(
+              "checkout_invoice_order_id",
+              String(maybeOrderId),
+            );
+          }
+
+          toast.success("Order placed successfully!");
+          router.push(
+            `/checkout/success?payment_method=cod${maybeOrderId ? `&order_id=${encodeURIComponent(String(maybeOrderId))}` : ""}`,
+          );
+        } else {
+          if (isCouponPaymentRestrictionMessage(response?.message)) {
+            openCouponPaymentModal(response.message);
+          } else {
+            toast.error(response.message || "Failed to place order");
+          }
+        }
       }
     } catch (error: unknown) {
       toast.dismiss();
@@ -550,121 +714,36 @@ const AddressPageInner = () => {
     }
   };
 
-  const handleCOD = async () => {
-    const normalizedEmail = userEmail.trim();
-    if (!normalizedEmail) {
-      toast.error("Please enter your email address.");
-      return;
-    }
-    if (!isValidEmail(normalizedEmail)) {
-      toast.error("Please enter a valid email address.");
-      return;
-    }
-    if (!selectedShippingAddressId) {
-      toast.error("Please select a delivery address.");
-      return;
-    }
-    const billingAddressId = getSelectedBillingAddress();
-    if (!billingSameAsShipping && !billingAddressId) {
-      toast.error("Please select a billing address.");
-      return;
-    }
-    const selectedAddress = addresses.find((a) => a._id === selectedShippingAddressId);
-    if (!selectedAddress) {
-      toast.error("Invalid address selected.");
-      return;
-    }
-    const billingSelectedAddress = addresses.find((a) => a._id === billingAddressId);
-    if (!billingSelectedAddress) {
-      toast.error("Invalid billing address selected.");
-      return;
-    }
-    if (normalizedActiveItems.length === 0) {
-      toast.error(isBuyNow ? "No item to order." : "Your cart is empty.");
-      return;
-    }
-
-    const shippingAddress = buildShippingAddress(selectedAddress);
-    const billingAddress = buildBillingAddress(billingSelectedAddress);
-
-    const orderItems = normalizedActiveItems.map((item) => ({
-      product: item.product._id,
-      variantId: item.variantId,
-      name: item.product.name,
-      image: item.product.mainImage?.url || item.variantImage || "",
-      price: item.discountPrice || item.price,
-      quantity: item.quantity,
-      gstPercent: item.product?.gstPercent || 0,
-      variant: {
-        size: item.size,
-        color: item.color,
-        v_sku:
-          ("variantSku" in item && typeof item.variantSku === "string"
-            ? item.variantSku
-            : item.product?.sku) || "",
-      },
-    }));
-
-    const totalPayable = netItemsTotal + shippingCharges + platformFee;
-
-    try {
-      setIsSubmitting(true);
-      toast.loading("Placing your order...");
-      const response = await createCODOrder(
-        shippingAddress,
-        billingAddress,
-        orderItems,
-        normalizedEmail,
-        {
-          itemsPrice: grossItemsTotal,
-          shippingPrice: shippingCharges,
-          taxPrice: platformFee,
-          totalPrice: totalPayable,
-        },
-        isBuyNow ? normalizedActiveItems : undefined,
-        isBuyNow ? undefined : normalizedActiveItems,
-        effectiveCouponCode
-          ? {
-              couponId: (couponMeta as { couponId?: string } | null)?.couponId,
-              couponCode: effectiveCouponCode,
-              discountPrice: effectiveCouponDiscount,
-            }
-          : undefined,
-        recoveryAttribution || undefined,
-      );
-      toast.dismiss();
-      if (response?.success) {
-        const maybeOrderId =
-          response?.data?.orderId ||
-          response?.data?._id ||
-          response?.data?.id ||
-          response?.data?.order?.id ||
-          response?.data?.order?._id;
-
-        if (maybeOrderId) {
-          sessionStorage.setItem(
-            "checkout_invoice_order_id",
-            String(maybeOrderId),
-          );
+  const buildCouponPayload = () =>
+    effectiveCouponCode
+      ? {
+          couponId: (effectiveCouponMeta as { couponId?: string } | null)?.couponId,
+          couponCode: effectiveCouponCode,
+          discountPrice: effectiveCouponDiscount,
         }
+      : undefined;
 
-        toast.success("Order placed successfully!");
-        router.push(
-          `/checkout/success?payment_method=cod${maybeOrderId ? `&order_id=${encodeURIComponent(String(maybeOrderId))}` : ""}`,
-        );
-      } else {
-        toast.error(response.message || "Failed to place order");
-      }
-    } catch (error: unknown) {
-      toast.dismiss();
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while placing your order",
-      );
-    } finally {
-      setIsSubmitting(false);
+  const handlePayOnline = () => {
+    void submitPayment("Prepaid", buildCouponPayload());
+  };
+
+  const handleCOD = () => {
+    void submitPayment("COD", buildCouponPayload());
+  };
+
+  const handleContinueWithoutCoupon = () => {
+    const action = pendingPaymentActionRef.current;
+    pendingPaymentActionRef.current = null;
+    setCouponPaymentModal(null);
+    clearAppliedCoupon();
+    if (action) {
+      void action();
     }
+  };
+
+  const handleCancelCouponPrompt = () => {
+    pendingPaymentActionRef.current = null;
+    setCouponPaymentModal(null);
   };
 
   const itemsForPricing = isBuyNow ? normalizedActiveItems : activeItems;
@@ -834,6 +913,68 @@ const AddressPageInner = () => {
               totalAmount={totalAmount}
               hideProceedButton={true}
             />
+
+            {couponPaymentModal && (
+              <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 px-4">
+                <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+                  <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        Coupon cannot be used
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {couponPaymentModal.message}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCancelCouponPrompt}
+                      className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-900"
+                      aria-label="Close"
+                    >
+                      <span aria-hidden="true" className="text-lg leading-none">
+                        ×
+                      </span>
+                    </button>
+                  </div>
+                  <div className="px-5 py-4 text-sm text-slate-600">
+                    You can proceed without this coupon or stay on the page and review your payment choice.
+                  </div>
+                  <div className="mx-5 mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-slate-500">Current payable</span>
+                      <span className="font-semibold text-slate-900">
+                        ₹{totalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-4">
+                      <span className="text-slate-500">
+                        Effective price without coupon
+                      </span>
+                      <span className="font-semibold text-slate-900">
+                        ₹{totalWithoutCoupon.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 border-t border-slate-100 px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={handleCancelCouponPrompt}
+                      className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleContinueWithoutCoupon}
+                      className="flex-[2] rounded-lg bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-black"
+                    >
+                      Continue without coupon
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Payment Method Buttons */}
             <div className="mt-6 flex flex-col gap-3">

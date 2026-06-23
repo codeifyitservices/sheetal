@@ -3,10 +3,12 @@ import React from "react";
 import ProductList from "../product-list/page";
 import { Metadata } from "next";
 import { fetchCategoryBySlugServer } from "../services/categoryService";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getSeoSettings } from "../services/seoSettingsService";
 import JsonLd from "../components/JsonLd";
 import { buildCategorySchema, parseSchemaString } from "../utils/schema";
+import { fetchStaticPageBySlug } from "../services/staticPageService";
+import StaticPage from "../components/StaticPage";
 
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
@@ -25,9 +27,44 @@ export async function generateMetadata({
   ]);
 
   if (!cat) {
+    const page = await fetchStaticPageBySlug(category);
+    if (page) {
+      const title = page.metaTitle || page.title;
+      const description = page.metaDescription || "";
+      const canonical =
+        page.canonicalUrl ||
+        `${seoSettings.websiteUrl || "https://studiobysheetal.com"}/${page.slug}`;
+      const ogTitle = page.ogTitle || title;
+      const ogDescription = page.ogDescription || description;
+
+      return {
+        title,
+        description,
+        keywords: page.metaKeywords || "",
+        alternates: {
+          canonical,
+        },
+        openGraph: {
+          title: ogTitle,
+          description: ogDescription,
+          url: canonical,
+          siteName: seoSettings.websiteName || "Studio By Sheetal",
+          images: page.ogImage
+            ? [{ url: page.ogImage, width: 1200, height: 630, alt: ogTitle }]
+            : [],
+          type: "website",
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: ogTitle,
+          description: ogDescription,
+          images: page.ogImage ? [page.ogImage] : [],
+        },
+      };
+    }
+
     return {
-      title: "Category | Studio By Sheetal",
-      description: "Browse our collection",
+      title: "Page Not Found | Studio By Sheetal",
     };
   }
 
@@ -75,7 +112,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   ]);
   
   if (!cat) {
-    redirect("/");
+    const page = await fetchStaticPageBySlug(category);
+    if (page) return <StaticPage page={page} />;
+    notFound();
   }
 
   const schema =

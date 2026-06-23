@@ -9,6 +9,7 @@ import {
   getStorefrontHomepageSettings,
   type HomepageCoupon,
 } from "./storefrontHeaderData";
+import TopInfoMotion from "./TopInfoMotion";
 
 const defaultText = "Check back soon for fresh offers.";
 
@@ -162,19 +163,21 @@ export default async function TopInfo() {
   const hasText = content.text.trim() !== "";
 
   return (
-    <div className="text-center bg-[#f3bf43] h-[27px] font-[family-name:var(--font-montserrat)]">
-      <p className="m-0 text-[15px] py-[2px] max-[552px]:text-[12px] max-[552px]:pt-[5px] max-[552px]:pb-0 text-black">
-        {content.text}
-        {content.code && (
-          <>
-            {" "}Use code{" "}
-            <span className="font-bold tracking-widest">{content.code}</span>
-            {": "}
-          </>
-        )}
-        {!content.code && hasText && ": "}
-        <TopInfoLink href={content.href} label={content.ctaLabel} />
-      </p>
-    </div>
+    <TopInfoMotion>
+      <div className="text-center bg-[#f3bf43] h-[27px] font-[family-name:var(--font-montserrat)]">
+        <p className="m-0 text-[15px] py-[2px] max-[552px]:text-[12px] max-[552px]:pt-[5px] max-[552px]:pb-0 text-black">
+          {content.text}
+          {content.code && (
+            <>
+              {" "}Use code{" "}
+              <span className="font-bold tracking-widest">{content.code}</span>
+              {": "}
+            </>
+          )}
+          {!content.code && hasText && ": "}
+          <TopInfoLink href={content.href} label={content.ctaLabel} />
+        </p>
+      </div>
+    </TopInfoMotion>
   );
 }

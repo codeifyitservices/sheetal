@@ -13,7 +13,10 @@ import QuickView from "./components/QuickView";
 import StorefrontLoadingShell from "../components/StorefrontLoadingShell";
 
 import { getProductImageUrl } from "../services/productService";
-import { fetchCategoryBySlug } from "../services/categoryService";
+import {
+  fetchAllCategories,
+  fetchCategoryBySlug,
+} from "../services/categoryService";
 import { getApiImageUrl } from "../services/api";
 
 import { useProducts } from "../hooks/useProducts";
@@ -40,6 +43,11 @@ const ProductListContent = ({
   const subCategory = searchParams.get("subCategory");
   const searchQuery = searchParams.get("search");
   const fromLookbook = searchParams.get("fromLookbook") === "true";
+  const lookbookCategorySlugs = (searchParams.get("categories") || "")
+    .split(",")
+    .map((slug) => slug.trim())
+    .filter(Boolean);
+  const hasLookbookCategoryFilter = lookbookCategorySlugs.length > 0;
 
   // Redirect /product-list?category=xyz to /xyz
   useEffect(() => {
@@ -54,7 +62,7 @@ const ProductListContent = ({
 
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [isResolvingCategory, setIsResolvingCategory] =
-    useState(!!categorySlug);
+    useState(!!categorySlug || lookbookCategorySlugs.length > 0);
   const [selectedProductSlug, setSelectedProductSlug] = useState<string | null>(
     null,
   );
@@ -130,6 +138,25 @@ const setViewMode = (mode: "grid" | "list") => {
   ======================= */
   useEffect(() => {
     const resolveCategory = async () => {
+      if (lookbookCategorySlugs.length > 0) {
+        setIsResolvingCategory(true);
+        try {
+          const categories = await fetchAllCategories();
+          const selectedIds = categories
+            .filter((category) => lookbookCategorySlugs.includes(category.slug))
+            .map((category) => category._id)
+            .filter(Boolean);
+
+          setCategoryId(selectedIds.length > 0 ? selectedIds.join(",") : undefined);
+        } catch (error) {
+          console.error("Error resolving lookbook categories:", error);
+          setCategoryId(undefined);
+        } finally {
+          setIsResolvingCategory(false);
+        }
+        return;
+      }
+
       if (!categorySlug) {
         setCategoryId(undefined);
         setIsResolvingCategory(false);
@@ -156,7 +183,7 @@ const setViewMode = (mode: "grid" | "list") => {
     };
 
     resolveCategory();
-  }, [categorySlug]);
+  }, [categorySlug, lookbookCategorySlugs.join(",")]);
 
   /* =======================
      Fetch Products
@@ -172,9 +199,10 @@ const setViewMode = (mode: "grid" | "list") => {
       subCategory: subCategory || undefined,
       search: searchQuery || undefined,
       sort: sortOption,
-      limit: 50,
+      limit: fromLookbook ? 1000 : 50,
     },
-    !categorySlug || !!categoryId,
+    (!categorySlug || !!categoryId) &&
+      (!hasLookbookCategoryFilter || !!categoryId),
   );
 
   /* =======================
@@ -200,7 +228,7 @@ const setViewMode = (mode: "grid" | "list") => {
         subCategory: subCategory || undefined,
         search: searchQuery || undefined,
         sort: sortOption,
-        limit: 50,
+        limit: fromLookbook ? 1000 : 50,
       });
     };
 
@@ -208,7 +236,15 @@ const setViewMode = (mode: "grid" | "list") => {
     return () => {
       window.removeEventListener(ORDER_CONFIRMED_EVENT, handleOrderConfirmed);
     };
-  }, [categoryId, categorySlug, refetch, searchQuery, sortOption, subCategory]);
+  }, [
+    categoryId,
+    categorySlug,
+    fromLookbook,
+    refetch,
+    searchQuery,
+    sortOption,
+    subCategory,
+  ]);
 
   /* =======================
      Handlers
