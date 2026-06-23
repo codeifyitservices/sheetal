@@ -29,7 +29,7 @@ export const FaqAccordionItem: React.FC<FaqAccordionItemProps> = ({
         aria-expanded={open}
       >
         {/* Question — dark near-black, matches desired */}
-        <span className="font-[family-name:var(--font-optima)] text-[16px] font-semibold tracking-wide text-[#061210] leading-snug pr-6">
+        <span className="font-[family-name:var(--font-optima)] cursor-pointer text-[16px] font-semibold tracking-wide text-[#061210] leading-snug pr-6">
           {question}
         </span>
 

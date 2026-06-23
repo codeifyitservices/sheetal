@@ -4,7 +4,12 @@ import React, { useCallback, useState, useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Image from "next/image";
 import Link from "next/link";
-import { getNewArrivals, Product } from "@/app/services/productService";
+import {
+  getNewArrivals,
+  getProductHoverImageUrl,
+  getProductImageUrl,
+  Product,
+} from "@/app/services/productService";
 import { useWishlist } from "../hooks/useWishlist";
 import WishlistLoginModal from "./WishlistLoginModal";
 import { buildProductHref } from "@/app/utils/productRoutes";
@@ -103,6 +108,11 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
     const displayPrice = getDisplayPrice(product);
     const isWishlisted = wishlist.some((p) => p._id === product._id);
     const productHref = buildProductHref(product);
+    const productImage = getProductImageUrl(
+      product,
+      "/assets/placeholder-product.jpg",
+    );
+    const productHoverImage = getProductHoverImageUrl(product, productImage);
 
     return (
       <div className="rounded-xl overflow-hidden group h-full flex flex-col">
@@ -116,7 +126,7 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
           )}
 
           {/* Wishlist */}
-          <div className="absolute top-2 right-2 flex flex-col gap-3 transform translate-x-12 opacity-0 transition-all duration-500 group-hover:translate-x-0 group-hover:opacity-100 z-20">
+          <div className="absolute top-2 right-2 flex flex-col gap-3 z-20">
             <button
               className="w-10 h-10 rounded-full flex items-center justify-center group/icon"
               onClick={(e) => {
@@ -145,18 +155,14 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
 
           <Link href={productHref} className="block h-full w-full relative">
             <Image
-              src={product.mainImage?.url || "/assets/placeholder-product.jpg"}
+              src={productImage}
               alt={product.name}
               width={400}
               height={533}
               className="w-full h-full object-cover rounded-xl transition-opacity duration-700 group-hover:opacity-0"
             />
             <Image
-              src={
-                product.hoverImage?.url ||
-                product.mainImage?.url ||
-                "/assets/placeholder-product.jpg"
-              }
+              src={productHoverImage}
               alt={product.name}
               width={400}
               height={533}
@@ -197,7 +203,7 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
                   </span>
                 </>
               ) : (
-                <span className="text-[clamp(11px,5cqw,18px)] text-[#281b00] font-bold whitespace-nowrap">
+                <span className="text-[16px] text-[#000000] font-medium whitespace-nowrap">
                   {displayPrice.mrp}
                 </span>
               )}

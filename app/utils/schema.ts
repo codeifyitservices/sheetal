@@ -6,7 +6,7 @@ import type { SeoSettings } from "../services/seoSettingsService";
 interface CmsPage {
   title?: string;
   slug?: string;
-  content?: string;
+  content?: unknown;
   metaTitle?: string;
   metaDescription?: string;
   canonicalUrl?: string;
@@ -26,8 +26,17 @@ const DEFAULT_WEBSITE_NAME = "Studio By Sheetal";
 const normalizeUrl = (value?: string) =>
   String(value || DEFAULT_WEBSITE_URL).replace(/\/+$/, "");
 
-const stripHtml = (value = "") =>
-  String(value)
+const extractTiptapText = (value: any): string => {
+  if (!value || typeof value !== "object") return "";
+  if (typeof value.text === "string") return value.text;
+  if (!Array.isArray(value.content)) return "";
+  return value.content.map(extractTiptapText).filter(Boolean).join(" ");
+};
+
+const stripHtml = (value: unknown = "") =>
+  String(
+    typeof value === "object" && value !== null ? extractTiptapText(value) : value,
+  )
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim();

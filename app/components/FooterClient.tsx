@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSettings } from "../hooks/useSettings";
@@ -8,6 +8,7 @@ import { getLogoUrl } from "../services/settingsService";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { createSubscriber } from "../services/newsletterServices";
+import { fetchFooterStaticPages } from "../services/staticPageService";
 import toast from "react-hot-toast";
 
 export interface FooterLink {
@@ -63,6 +64,7 @@ const FooterClient = ({
   layout: FooterBlock[];
   whatsapp?: string;
 }) => {
+  const [resolvedLayout, setResolvedLayout] = useState(layout);
   const { settings } = useSettings();
   const logoUrl = getLogoUrl(settings);
 
@@ -71,6 +73,71 @@ const FooterClient = ({
   const showBackToTop = pathname !== "/";
 
   const finalWhatsapp = whatsapp || "919958813913";
+
+  useEffect(() => {
+    setResolvedLayout(layout);
+  }, [layout]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadFooterPages = async () => {
+      const pages = await fetchFooterStaticPages();
+      if (!isActive || !pages.length) return;
+
+      setResolvedLayout((currentLayout) => {
+        const nextLayout = JSON.parse(JSON.stringify(currentLayout)) as FooterBlock[];
+        const doubleBlock = nextLayout.find(
+          (block): block is FooterDoubleBlock => block.type === "double",
+        );
+        const singleBlock = nextLayout.find(
+          (block): block is FooterSingleBlock => block.type === "single",
+        );
+
+
+        pages.forEach((page) => {
+          if (page.footerPlacement === "footer_column_3") {
+            if (!singleBlock) return;
+            singleBlock.hidden = false;
+            const href = `/${page.slug}`;
+            if (singleBlock.links.some((link) => link.href === href)) return;
+            singleBlock.links.push({
+              id: `static-page-${page._id}`,
+              label: page.title,
+              href,
+              hidden: false,
+            });
+            return;
+          }
+
+          if (!doubleBlock) return;
+          doubleBlock.hidden = false;
+          const columnIndex =
+            page.footerPlacement === "footer_column_2" ? 1 : 0;
+          const column = doubleBlock.columns[columnIndex];
+          if (!column) return;
+
+          column.hidden = false;
+          const href = `/${page.slug}`;
+          if (column.links.some((link) => link.href === href)) return;
+          column.links.push({
+            id: `static-page-${page._id}`,
+            label: page.title,
+            href,
+            hidden: false,
+          });
+        });
+
+        return nextLayout;
+      });
+    };
+
+    void loadFooterPages();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const handleSubscribe = async () => {
     if (!newsletterEmail.trim()) {
@@ -134,7 +201,7 @@ const FooterClient = ({
 
             <div className="px-0 sm:px-2 lg:col-span-3 lg:px-4">
               <div className="grid grid-cols-1 gap-6 text-left lg:grid-cols-2">
-                {layout
+                {resolvedLayout
                   .filter((block) => !block.hidden)
                   .map((block) => {
                     if (block.type === "double") {

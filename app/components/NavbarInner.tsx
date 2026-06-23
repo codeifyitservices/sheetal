@@ -1325,66 +1325,110 @@ const NavbarInner = ({
       </div>
 
       <header
-        className={`md:hidden fixed w-full z-40 bg-[#112f23] backdrop-blur-sm shadow-sm py-2 transition-all duration-300 ${
-          scrolled || !topInfoEnabled ? "top-0" : "top-[27px]"
-        }`}
-      >
-        <div className="container mx-auto px-4 flex justify-between items-center h-[50px]">
-          <Link href="/" className="inline-block">
-            <Image
-              src={logoUrl}
-              alt="Studio By Sheetal"
-              width={120}
-              height={40}
-              className="h-[40px] w-auto"
-            />
-          </Link>
+  className={`md:hidden fixed w-full z-40 bg-[#112f23] backdrop-blur-sm shadow-sm transition-all duration-300 ${
+    scrolled || !topInfoEnabled ? "top-0" : "top-[27px]"
+  }`}
+>
+  <div className="px-4 flex justify-between items-center h-[56px]">
+    
+    {/* Logo */}
+    <Link href="/" className="inline-block">
+      <Image
+        src={logoUrl}
+        alt="Studio By Sheetal"
+        width={140}
+        height={48}
+        className="h-[44px] w-auto"
+      />
+    </Link>
 
-          <div className="flex items-center gap-4">
-            <button onClick={toggleSearch}>
-              <Image
-                src="/assets/icons/search.svg"
-                alt="Search"
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-            </button>
-            <NavbarUserIcon
-              isClientMounted={isClientMounted}
-              isAuthenticatedUser={isAuthenticatedUser}
-              isUserDropdownOpen={isUserDropdownOpen}
-              onMouseEnter={handleMouseEnterUser}
-              onMouseLeave={handleMouseLeaveUser}
-              onLogout={handleLogout}
-              getDisplayName={getDisplayName}
-            />
-            <Link href="/cart" className="relative">
-              <Image
-                src="/assets/icons/shopping-bag.svg"
-                alt="Cart"
-                width={24}
-                height={24}
-                className="w-6 h-6 font-bold"
-              />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-[#955300] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
-                  {cartItemCount}
-                </span>
-              )}
-            </Link>
-            <div className="cursor-pointer" onClick={toggleMobileMenu}>
-              <Image
-                src="/assets/icons/hambuger.svg"
-                width={24}
-                height={24}
-                alt="Menu"
-                className="w-6 h-6"
-              />
-            </div>
-          </div>
-        </div>
-      </header>
+    {/* Icons */}
+    <div className="flex items-center gap-1">
+      
+      {/* Search */}
+      <button
+        onClick={toggleSearch}
+        className="w-10 h-10 flex items-center justify-center hover:opacity-80 transition-opacity"
+        aria-label="Search"
+      >
+        <Image
+          src="/assets/icons/search.svg"
+          alt=""
+          width={24}
+          height={24}
+          className="w-8 h-8"
+        />
+      </button>
+
+      {/* User */}
+      <NavbarUserIcon
+        isClientMounted={isClientMounted}
+        isAuthenticatedUser={isAuthenticatedUser}
+        isUserDropdownOpen={isUserDropdownOpen}
+        onMouseEnter={handleMouseEnterUser}
+        onMouseLeave={handleMouseLeaveUser}
+        onLogout={handleLogout}
+        getDisplayName={getDisplayName}
+      />
+
+      {/* Wishlist */}
+      <Link
+        href={wishlistHref}
+        className="w-10 h-10 flex items-center justify-center relative hover:opacity-80 transition-opacity"
+        aria-label="Wishlist"
+      >
+        <Image
+          src="/assets/icons/heart.svg"
+          alt=""
+          width={24}
+          height={24}
+          className="w-6 h-6"
+        />
+        {wishlistCount > 0 && (
+          <span className="absolute top-1 right-1 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[9px] min-w-[16px] h-4 flex items-center justify-center rounded-full px-0.5 leading-none">
+            {wishlistCount}
+          </span>
+        )}
+      </Link>
+
+      {/* Cart */}
+      <Link
+        href="/cart"
+        className="w-10 h-10 flex items-center justify-center relative hover:opacity-80 transition-opacity"
+        aria-label="Cart"
+      >
+        <Image
+          src="/assets/icons/shopping-bag.svg"
+          alt=""
+          width={2}
+          height={24}
+          className="w-9 h-9 mb-2"
+        />
+        {cartItemCount > 0 && (
+          <span className="absolute top-0 right-0 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[9px] min-w-[16px] h-4 flex items-center justify-center rounded-full px-0.5 leading-none">
+            {cartItemCount}
+          </span>
+        )}
+      </Link>
+
+      {/* Hamburger */}
+      <button
+        onClick={toggleMobileMenu}
+        className="w-10 h-10 flex items-center justify-center hover:opacity-80 transition-opacity"
+        aria-label="Open menu"
+      >
+        <Image
+          src="/assets/icons/hambuger.svg"
+          width={24}
+          height={24}
+          alt=""
+          className="w-6 h-6"
+        />
+      </button>
+
+    </div>
+  </div>
+</header>
 
       {searchOpen && (
         <SearchModal
