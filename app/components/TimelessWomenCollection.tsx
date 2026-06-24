@@ -98,12 +98,12 @@ const TimelessWomenCollection = () => {
   return (
     <div className="flex w-full justify-center bg-[#fbfbfb] px-4 py-6 sm:px-6">
       <div className="container px-0">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch justify-items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch justify-items-center">
           <SliderTrack slides={leftSliderData} activeIndex={activeIndex} />
 
-          <div className="w-full max-w-[400px] h-[320px] flex relative">
-            <div className="hidden md:block absolute top-20 -left-5 h-0.5 w-15 bg-[#a2690f]" />
-            <div className="hidden md:block absolute top-20 -right-5 h-0.5 w-15 bg-[#a2690f]" />
+          <div className="w-full max-w-[800px] h-[320px] flex relative">
+            <div className="hidden md:block absolute top-20 -left-5 h-0.5 w-15 z-99 bg-[#a2690f]" />
+            <div className="hidden md:block absolute top-20 -right-5 h-0.5 w-15 z-99 bg-[#a2690f]" />
             <div className="flex w-full h-full border border-[#FFC107] rounded-2xl items-center justify-center hover:shadow-xl transition-shadow duration-300">
               <div className="px-5 text-center md:px-8">
                 {centerContent.label && (
@@ -152,7 +152,7 @@ function SliderTrack({ slides, activeIndex }: SliderTrackProps) {
   const normalizedActiveIndex = slides.length ? activeIndex % slides.length : 0;
 
   return (
-    <div className="w-full max-w-[400px] h-auto">
+    <div className="w-full max-w-[800px] h-auto">
       <div className="overflow-hidden rounded-lg">
         <div
           className="flex flex-row flex-nowrap transition-transform duration-500 ease-out"

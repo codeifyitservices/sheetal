@@ -188,7 +188,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 }) => {
   return (
     <div
-      className={`grid gap-1 md:gap-3 xl:gap-5
+      className={`grid gap-1 pb-10 md:gap-5 xl:gap-5
         ${
           viewMode === "grid"
             ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -196,13 +196,15 @@ const ProductGrid: React.FC<ProductGridProps> = ({
         }`}
     >
       {products.map((product) => (
-        <ProductCard
+        <div className="my-3 md:my-0">
+          <ProductCard
           key={product._id}
           product={product}
           viewMode={viewMode}
           onToggleWishlist={onToggleWishlist}
           onQuickView={onQuickView}
         />
+        </div>
       ))}
     </div>
   );

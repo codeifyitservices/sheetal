@@ -51,17 +51,23 @@ const ProfileView: React.FC = () => {
   }, []);
 
   if (initialLoading) {
-    return <div className="ml-20 w-160 text-sm">Loading user data...</div>;
+    return (
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:mx-0 lg:ml-20 lg:max-w-[640px] lg:px-0 text-sm">
+        Loading user data...
+      </div>
+    );
   }
 
   if (initialError) {
     return (
-      <div className="ml-20 w-160 text-sm text-red-500">{initialError}</div>
+      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:mx-0 lg:ml-20 lg:max-w-[640px] lg:px-0 text-sm text-red-500">
+        {initialError}
+      </div>
     );
   }
 
   return (
-    <div className="ml-20 w-160">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:mx-0 lg:ml-20 lg:max-w-[640px] lg:px-0">
       {/* Header */}
       <div className="pb-4 border-b border-gray-200">
         <h3 className="text-xl font-bold">Profile Details</h3>
@@ -72,8 +78,8 @@ const ProfileView: React.FC = () => {
       <div className="text-sm">
         {/* Profile Picture */}
         {profilePictureUrl && (
-          <div className="flex items-center py-6 px-5 border border-gray-200 rounded-sm mt-3">
-            <label className="w-56 text-gray-700 font-semibold">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 py-6 px-5 border border-gray-200 rounded-sm mt-3">
+            <label className="sm:w-56 text-gray-700 font-semibold">
               Profile Picture
             </label>
             <div className="flex items-center space-x-4">
@@ -94,7 +100,7 @@ const ProfileView: React.FC = () => {
             <label className="text-gray-700 font-semibold mb-1">
               Mobile Number
             </label>
-            <span className="text-gray-900 font-medium">
+            <span className="text-gray-900 font-medium break-words">
               {mobileNumber || "-"}
             </span>
           </div>
@@ -104,7 +110,7 @@ const ProfileView: React.FC = () => {
         <div className="flex items-center justify-between py-6 px-5 border border-gray-200 hover:border-[#ac8037] rounded-sm mt-3">
           <div className="flex flex-col">
             <label className="text-gray-700 font-semibold mb-1">Email</label>
-            <span className="text-gray-900 font-medium">{email || "-"}</span>
+            <span className="text-gray-900 font-medium break-words">{email || "-"}</span>
           </div>
         </div>
 
@@ -114,7 +120,7 @@ const ProfileView: React.FC = () => {
             <label className="text-gray-700 font-semibold mb-1">
               Full Name
             </label>
-            <span className="text-gray-900 font-medium">{name || "-"}</span>
+            <span className="text-gray-900 font-medium break-words">{name || "-"}</span>
           </div>
         </div>
 
@@ -147,7 +153,7 @@ const ProfileView: React.FC = () => {
                 <label className="text-gray-700 font-semibold mb-1">
                   Mobile Number
                 </label>
-                <span className="text-gray-900 font-medium">
+                <span className="text-gray-900 font-medium break-words">
                   {alternativeMobileNumber}
                 </span>
               </div>

@@ -462,7 +462,7 @@ const EditProfile: React.FC = () => {
   };
 
   return (
-    <div className="ml-20 w-160">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:mx-0 lg:ml-20 lg:max-w-[640px] lg:px-0">
       <div className="pb-4 border-b border-gray-200">
         <h3 className="text-xl font-bold">Edit Profile</h3>
         <p className="text-sm">Update your profile details</p>
@@ -478,9 +478,9 @@ const EditProfile: React.FC = () => {
 
         {!initialLoading && !initialError && (
           <>
-            <div className="flex items-center py-6 px-5 border border-gray-200 rounded-sm mt-3">
-              <label className="w-56 text-gray-700">Profile Picture</label>
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 py-6 px-5 border border-gray-200 rounded-sm mt-3">
+              <label className="sm:w-56 text-gray-700">Profile Picture</label>
+              <div className="flex items-center gap-4 flex-wrap">
                 {(profilePicturePreview || profilePictureUrl) && (
                   <Image
                     src={profilePicturePreview || profilePictureUrl}
@@ -494,7 +494,7 @@ const EditProfile: React.FC = () => {
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="text-sm file:border file:border-gray-300 file:px-3 file:py-1 file:bg-white file:rounded file:text-gray-700"
+                  className="text-sm max-w-full file:border file:border-gray-300 file:px-3 file:py-1 file:bg-white file:rounded file:text-gray-700"
                 />
               </div>
             </div>
@@ -507,7 +507,7 @@ const EditProfile: React.FC = () => {
                     Mobile Number* 
                   </label>
                   {isPhoneVerified && !showOtpInput ? (
-                    <div className="flex items-center">
+                    <div className="flex items-center flex-wrap gap-y-2">
                       <span className="text-gray-900 font-medium text-lg">
                         {mobileNumber}
                       </span>
@@ -525,8 +525,8 @@ const EditProfile: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex gap-4 items-center justify-between">
-                      <div className="relative flex-1 max-w-xs">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
+                      <div className="relative w-full sm:flex-1 sm:max-w-xs">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                           +91
                         </span>
@@ -550,7 +550,7 @@ const EditProfile: React.FC = () => {
                             mobileNumber.length !== 10 ||
                             isPhoneVerified
                           }
-                          className="bg-[#8b6b2f] cursor-pointer  text-white px-4 py-2 rounded text-xs font-bold tracking-wide hover:bg-[#7a5f29] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                          className="w-full sm:w-auto bg-[#8b6b2f] cursor-pointer  text-white px-4 py-2 rounded text-xs font-bold tracking-wide hover:bg-[#7a5f29] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                         >
                           {phoneLoading ? "SENDING..." : "VERIFY"}
                         </button>
@@ -566,7 +566,7 @@ const EditProfile: React.FC = () => {
                   <p className="text-gray-600 text-sm mb-3">
                     Enter the 6-digit code sent to +91 {mobileNumber}
                   </p>
-                  <div className="flex gap-3 mb-4">
+                  <div className="flex gap-2 sm:gap-3 mb-4">
                     {otp.map((digit, index) => (
                       <input
                         key={index}
@@ -576,14 +576,14 @@ const EditProfile: React.FC = () => {
                         type="text"
                         inputMode="numeric"
                         maxLength={1}
-                        className="w-10 h-10 text-center text-lg border border-gray-300 rounded focus:border-[#8b6b2f] focus:ring-1 focus:ring-[#8b6b2f] outline-none transition-all"
+                        className="w-9 h-9 sm:w-10 sm:h-10 text-center text-base sm:text-lg border border-gray-300 rounded focus:border-[#8b6b2f] focus:ring-1 focus:ring-[#8b6b2f] outline-none transition-all"
                         value={digit}
                         onChange={(e) => handleOtpChange(index, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(index, e)}
                       />
                     ))}
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3 items-center">
                     <button
                       onClick={handleVerifyOtp}
                       disabled={phoneLoading}
@@ -600,7 +600,7 @@ const EditProfile: React.FC = () => {
                     <button
                       onClick={handleSendOtp}
                       disabled={phoneLoading || resendCooldown > 0}
-                      className="ml-auto text-[#8b6b2f] text-sm font-medium cursor-pointer hover:underline"
+                      className="sm:ml-auto text-[#8b6b2f] text-sm font-medium cursor-pointer hover:underline"
                     >
                       {resendCooldown > 0
                         ? `Resend in ${resendCooldown}s`
@@ -622,7 +622,7 @@ const EditProfile: React.FC = () => {
                     Email*
                   </label>
                   {isEmailVerified && !showEmailOtpInput ? (
-                    <div className="flex items-center">
+                    <div className="flex items-center flex-wrap gap-y-2">
                       <span className="text-gray-900 font-medium text-lg min-w-[200px] truncate">
                         {email}
                       </span>
@@ -640,8 +640,8 @@ const EditProfile: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex gap-4 items-center justify-between">
-                      <div className="relative flex-1 max-w-sm">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
+                      <div className="relative w-full sm:flex-1 sm:max-w-sm">
                         <input
                           type="email"
                           value={email}
@@ -655,7 +655,7 @@ const EditProfile: React.FC = () => {
                         <button
                           onClick={handleSendEmailOtp}
                           disabled={emailLoading || !email}
-                          className="bg-[#8b6b2f] text-white cursor-pointer px-4 py-2 rounded text-xs font-bold tracking-wide hover:bg-[#7a5f29] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                          className="w-full sm:w-auto bg-[#8b6b2f] text-white cursor-pointer px-4 py-2 rounded text-xs font-bold tracking-wide hover:bg-[#7a5f29] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                         >
                           {emailLoading ? "SENDING..." : "VERIFY"}
                         </button>
@@ -671,7 +671,7 @@ const EditProfile: React.FC = () => {
                   <p className="text-gray-600 text-sm mb-3">
                     Enter the 6-digit code sent to {email}
                   </p>
-                  <div className="flex gap-3 mb-4">
+                  <div className="flex gap-2 sm:gap-3 mb-4">
                     {emailOtp.map((digit, index) => (
                       <input
                         key={index}
@@ -681,7 +681,7 @@ const EditProfile: React.FC = () => {
                         type="text"
                         inputMode="numeric"
                         maxLength={1}
-                        className="w-10 h-10 text-center text-lg border border-gray-300 rounded focus:border-[#8b6b2f] focus:ring-1 focus:ring-[#8b6b2f] outline-none transition-all"
+                        className="w-9 h-9 sm:w-10 sm:h-10 text-center text-base sm:text-lg border border-gray-300 rounded focus:border-[#8b6b2f] focus:ring-1 focus:ring-[#8b6b2f] outline-none transition-all"
                         value={digit}
                         onChange={(e) =>
                           handleEmailOtpChange(index, e.target.value)
@@ -690,7 +690,7 @@ const EditProfile: React.FC = () => {
                       />
                     ))}
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3 items-center">
                     <button
                       onClick={handleVerifyEmailOtp}
                       disabled={emailLoading}
@@ -706,7 +706,7 @@ const EditProfile: React.FC = () => {
                     </button>
                     <button
                       onClick={handleSendEmailOtp}
-                      className="ml-auto text-[#8b6b2f] cursor-pointer text-sm font-medium hover:underline"
+                      className="sm:ml-auto text-[#8b6b2f] cursor-pointer text-sm font-medium hover:underline"
                     >
                       Resend Code
                     </button>
@@ -716,8 +716,8 @@ const EditProfile: React.FC = () => {
             </div>
 
             {/* Full Name */}
-            <div className="flex items-center justify-between py-6 px-5 border border-gray-200 hover:border-[#ac8037] rounded-sm mt-3">
-              <div className="flex flex-col w-full mr-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-6 px-5 border border-gray-200 hover:border-[#ac8037] rounded-sm mt-3">
+              <div className="flex flex-col w-full sm:mr-4">
                 <label className="text-gray-700 mb-1">Full Name</label>
                 <input
                   type="text"
@@ -726,10 +726,10 @@ const EditProfile: React.FC = () => {
                   className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-[#8b6b2f]"
                 />
               </div>
-              <div className="flex gap-3 pt-6">
+              <div className="flex gap-3 sm:pt-6">
                 <button
                   onClick={() => setGender("Male")}
-                  className={`px-4 py-2 border rounded text-sm transition-all cursor-pointer ${
+                  className={`flex-1 sm:flex-none px-4 py-2 border rounded text-sm transition-all cursor-pointer ${
                     gender === "Male"
                       ? "border-black bg-gray-50 font-semibold shadow-sm"
                       : "border-gray-300 text-gray-600 hover:border-gray-400"
@@ -739,7 +739,7 @@ const EditProfile: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setGender("Female")}
-                  className={`px-4 py-2 border rounded text-sm transition-all cursor-pointer ${
+                  className={`flex-1 sm:flex-none px-4 py-2 border rounded text-sm transition-all cursor-pointer ${
                     gender === "Female"
                       ? "border-black bg-gray-50 font-semibold shadow-sm"
                       : "border-gray-300 text-gray-600 hover:border-gray-400"
@@ -785,7 +785,7 @@ const EditProfile: React.FC = () => {
                   pattern="[0-9]{10}"
                   maxLength={10}
                   autoComplete="tel"
-                  className="flex-1 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-[#8b6b2f]"
+                  className="flex-1 min-w-0 border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-[#8b6b2f]"
                 />
               </div>
             </div>

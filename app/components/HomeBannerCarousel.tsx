@@ -53,8 +53,16 @@ const resolveBannerHref = (href?: string) => {
   return categorySlug ? `/${encodeURIComponent(categorySlug)}` : "/product-list";
 };
 
-const ArrowIcon = ({ src, alt }: { src: string; alt: string }) => (
-  <Image src={src} alt={alt} width={48} height={48} className="h-12 w-12" />
+const ArrowIcon = ({
+  src,
+  alt,
+  className = "h-12 w-12",
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) => (
+  <Image src={src} alt={alt} width={48} height={48} className={className} />
 );
 
 const fallbackDesktop = [
@@ -242,7 +250,7 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
             {mobileLoopBanners.map((banner, index) => (
               <div key={`${banner._id}-mobile-${index}`} className="banner-carousel-item min-w-full outline-none">
                 <Link href={resolveBannerHref(banner.link)}>
-                  <div className="relative min-h-[100svh] w-full bg-[#e9e0d1]">
+                  <div className="relative min-h-[75svh] w-full bg-[#e9e0d1]">
                     <Image
                       src={getApiImageUrl(
                         banner.image.mobile,
@@ -261,6 +269,45 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
               </div>
             ))}
           </div>
+
+          {resolvedMobileBanners.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous banner"
+                className="absolute left-2 top-1/2 z-10 flex -translate-y-1/2 cursor-pointer"
+                onClick={() => {
+                  setMobileTransitionEnabled(true);
+                  setMobileIndex((current) =>
+                    current === 0 ? resolvedMobileBanners.length - 1 : current - 1,
+                  );
+                }}
+              >
+                <ArrowIcon
+                  src="/assets/left-image.png"
+                  alt="Previous banner"
+                  className="h-8 w-8"
+                />
+              </button>
+              <button
+                type="button"
+                aria-label="Next banner"
+                className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 cursor-pointer"
+                onClick={() => {
+                  setMobileTransitionEnabled(true);
+                  setMobileIndex((current) =>
+                    current === resolvedMobileBanners.length ? current : current + 1,
+                  );
+                }}
+              >
+                <ArrowIcon
+                  src="/assets/right-image.png"
+                  alt="Next banner"
+                  className="h-8 w-8"
+                />
+              </button>
+            </>
+          )}
         </div>
 
         <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-24">
@@ -283,7 +330,7 @@ const HomeBannerCarousel = ({ banners }: { banners: BannerItem[] }) => {
         alt="Banner Decorative Shape"
         width={1920}
         height={160}
-        className="absolute bottom-0 left-0 z-20 h-auto w-full"
+        className="absolute -bottom-1 left-0 z-20 h-auto w-full"
         sizes="100vw"
         quality={72}
       />

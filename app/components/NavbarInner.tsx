@@ -614,7 +614,7 @@ const MobileSubMenuView = ({
           </svg>
           Back
         </button>
-        <h2 className="text-[#f2bf42] font-serif tracking-wide capitalize">
+        <h2 className="text-[#f2bf42] font-montserrat tracking-wide capitalize">
           {item.label}
         </h2>
         <button onClick={onClose} className="text-[#f2bf42] text-xl">
@@ -625,7 +625,7 @@ const MobileSubMenuView = ({
       <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-[#f5f5f5]">
         {tagGroups.map((group, idx) => (
           <div key={idx} className="mb-6">
-            <h3 className="text-[#b3a660] font-medium text-lg mb-3 capitalize">
+            <h3 className="text-[#b3a660] font-montserrat font-medium text-lg mb-3 capitalize">
               {group.title}
             </h3>
             <ul className="space-y-2 pl-1">
@@ -633,7 +633,7 @@ const MobileSubMenuView = ({
                 <li key={tag}>
                   <Link
                     href={`/${item.slug}?type=${group.type}&value=${encodeURIComponent(tag)}`}
-                    className="text-gray-700 hover:text-[#082722] text-base capitalize transition-colors block py-1"
+                    className="text-gray-700 font-montserrat hover:text-[#082722] text-base capitalize transition-colors block py-1"
                     onClick={onClose}
                   >
                     {tag}
@@ -657,7 +657,7 @@ const MobileSubMenuView = ({
 
         {(loadingProducts || latestProducts.length > 0) && (
           <div className="mt-8 border-t border-gray-200 pt-8">
-            <h3 className="text-[#082722] font-serif text-xl mb-4 tracking-wide">
+            <h3 className="text-[#082722] font-montserrat text-xl mb-4 tracking-wide">
               New Arrivals
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -751,7 +751,7 @@ const MobileMenuOverlay = ({
             onClose={onClose}
           />
         ) : (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full font-montserrat">
             <div className="flex justify-end p-4 shrink-0">
               <button onClick={onClose} className="text-[#f2bf42] text-2xl">
                 ✕
@@ -771,7 +771,7 @@ const MobileMenuOverlay = ({
                     {hasSubMenu ? (
                       <button
                         onClick={() => handleItemClick(item)}
-                        className="w-full flex justify-between items-center text-[#f2bf42] text-lg font-medium tracking-wide"
+                        className="w-full flex font-montserrat justify-between items-center text-[#f2bf42] text-lg font-medium tracking-wide"
                       >
                         {item.label}
                         <svg
@@ -792,7 +792,7 @@ const MobileMenuOverlay = ({
                     ) : (
                       <Link
                         href={item.href || "#"}
-                        className="block text-[#f2bf42] text-lg font-medium tracking-wide"
+                        className="block text-[#f2bf42] text-lg font-medium font-montserrat tracking-wide"
                         onClick={onClose}
                       >
                         {item.label}

@@ -10,13 +10,13 @@ const ADDRESS_ICON_PATH = "/assets/icons/address.svg";
 
 const MyAccountOverviewPage = () => {
   return (
-    <div className="ml-20 w-160">
+    <div className="w-full px-4 lg:px-6">
       {/* Header */}
       <h4 className="text-xl font-semibold text-gray-900 mb-2">Dashboard</h4>
       <hr className="mb-8 border-gray-200" />
 
       {/* Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-6 w-full max-w-2xl lg:max-w-4xl lg:grid-cols-3">
         <DashboardLinkCard
           href="/my-account/orders"
           icon={ORDERS_ICON_PATH}

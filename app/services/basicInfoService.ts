@@ -10,6 +10,10 @@ export interface BasicInfoAddress {
 
 export interface BasicInfo {
   gstNumber: string;
+  companyName: string;
+  invoiceDeclaration: string;
+  invoiceContactText: string;
+  invoiceFooterYear: string;
   shippingAddress: BasicInfoAddress;
   billingAddress: BasicInfoAddress;
 }
@@ -76,6 +80,10 @@ export const getBasicInfo = async () => {
         res.data.gstin,
         res.data.gstNo,
       ),
+      companyName: pickString(res.data.companyName),
+      invoiceDeclaration: pickString(res.data.invoiceDeclaration),
+      invoiceContactText: pickString(res.data.invoiceContactText),
+      invoiceFooterYear: pickString(res.data.invoiceFooterYear),
       shippingAddress: normalizeAddress(res.data.shippingAddress),
       billingAddress: normalizeAddress(res.data.billingAddress),
     } as BasicInfo,

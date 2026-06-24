@@ -85,6 +85,10 @@ interface BasicInfoAddress {
 
 interface BasicInfo {
   gstNumber: string;
+  companyName: string;
+  invoiceDeclaration: string;
+  invoiceContactText: string;
+  invoiceFooterYear: string;
   shippingAddress: BasicInfoAddress;
   billingAddress: BasicInfoAddress;
 }
@@ -138,6 +142,10 @@ const InvoicePageInner = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
     gstNumber: "",
+    companyName: "",
+    invoiceDeclaration: "",
+    invoiceContactText: "",
+    invoiceFooterYear: "",
     shippingAddress: emptyAddress,
     billingAddress: emptyAddress,
   });
@@ -210,6 +218,10 @@ const InvoicePageInner = () => {
           if (res?.success && res?.data) {
             setBasicInfo({
               gstNumber: res.data.gstNumber || "",
+              companyName: res.data.companyName || "",
+              invoiceDeclaration: res.data.invoiceDeclaration || "",
+              invoiceContactText: res.data.invoiceContactText || "",
+              invoiceFooterYear: res.data.invoiceFooterYear || "",
               shippingAddress: res.data.shippingAddress || emptyAddress,
               billingAddress: res.data.billingAddress || emptyAddress,
             });
@@ -309,7 +321,7 @@ const InvoicePageInner = () => {
                   </td>
                   <td className="align-top text-right text-[#153643]">
                     <h1 className="text-[32px] font-bold my-5">
-                      Sheetal By Studios
+                      {basicInfo.companyName || "Sheetal By Studios"}
                     </h1>
                     <p className="text-[16px]">
                       <strong>GSTIN Number:</strong>{" "}
@@ -652,23 +664,15 @@ const InvoicePageInner = () => {
 
                     <p className="m-0 text-[14px] leading-[24px]">
                       <strong>DECLARATION</strong>,<br />
-                      The goods sold as part of this shipment are intended for
-                      end-user consumption and are not for retail sale
+                      {basicInfo.invoiceDeclaration ||
+                        "The goods sold as part of this shipment are intended for end-user consumption and are not for retail sale"}
                     </p>
 
                     <p className="my-4">&nbsp;</p>
 
                     <p className="m-0 text-[14px] leading-[24px]">
-                      If you have any questions, feel free to call customer care
-                      at +91 80 6156 1999 or use Contact Us section in our App,
-                      or log on to{" "}
-                      <a
-                        href="https://www.studiobysheetal.com/contact"
-                        className="underline text-inherit"
-                      >
-                        www.studiobysheetal.com/contact
-                      </a>
-                      .
+                      {basicInfo.invoiceContactText ||
+                        "If you have any questions, feel free to call customer care at +91 80 6156 1999 or use Contact Us section in our App, or log on to www.studiobysheetal.com/contact."}
                     </p>
                   </td>
                 </tr>
@@ -682,9 +686,9 @@ const InvoicePageInner = () => {
                 <tr>
                   <td className="p-0 text-center">
                     <p className="m-0 text-[14px] leading-[16px] text-white">
-                      © 2026{" "}
+                      © {basicInfo.invoiceFooterYear || new Date().getFullYear()}{" "}
                       <Link href="/" className="text-white underline">
-                        Studio By Sheetal
+                        {basicInfo.companyName || "Studio By Sheetal"}
                       </Link>
                     </p>
                   </td>

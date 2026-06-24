@@ -20,7 +20,7 @@ const TermsPage = () => {
   }, []);
 
   return (
-    <div className="ml-20 w-160 max-w-full">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:mx-0 lg:ml-20 lg:max-w-[640px] lg:px-0">
       <h4 className="text-2xl font-semibold text-gray-800 mb-2">
         Terms of Use
       </h4>
@@ -33,7 +33,7 @@ const TermsPage = () => {
         </div>
       ) : (
         <div 
-          className="prose max-w-none policy-account-content text-sm text-gray-700"
+          className="prose prose-sm sm:prose max-w-none policy-account-content text-sm text-gray-700 break-words"
           dangerouslySetInnerHTML={{ __html: content || "<p>No content available.</p>" }}
         />
       )}

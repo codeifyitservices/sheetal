@@ -25,12 +25,12 @@ const isLinkItem = (item: SectionItem): item is LinkSectionItem => {
 
 interface DashboardSidebarProps {
   activeSection: string;
-  // onSelectSection: (section: string) => void; // Removed as Link handles navigation
+  onSelectSection?: (section: string) => void;
 }
 
 const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   activeSection,
-  // onSelectSection, // Removed as Link handles navigation
+  onSelectSection,
 }) => {
   const router = useRouter();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -44,7 +44,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
     { name: "Account", type: "header" },
     { name: "Profile", link: "profile" },
-    { name: "Edit Profile", link: "edit-profile" }, // Added Edit Profile link
+    { name: "Edit Profile", link: "edit-profile" },
     { name: "Saved Cards", link: "cards" },
     { name: "Addresses", link: "addresses" },
     { name: "Delete Account", link: "delete-account", isDanger: true },
@@ -54,15 +54,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     { name: "Privacy Center", link: "privacy-center" },
   ];
 
-  // Helper to get the correct href for each section
   const getHref = (link: string) => {
-    if (link === "overview") {
-      return "/my-account";
-    } else if (link === "profile") {
-      return "/my-account/profile";
-    } else if (link === "edit-profile") {
-      return "/my-account/profile/edit";
-    }
+    if (link === "overview") return "/my-account";
+    if (link === "profile") return "/my-account/profile";
+    if (link === "edit-profile") return "/my-account/profile/edit";
     return `/my-account/${link}`;
   };
 
@@ -70,7 +65,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     setIsDeleting(true);
     try {
       const res = await deleteAccount();
-      
       if (res.success) {
         toast.success("Account deleted successfully");
         logout();
@@ -88,7 +82,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   };
 
   return (
-    <div className="hidden lg:block col-lg-4 w-70">
+    // Removed "hidden lg:block" — visibility is now controlled by the parent layout
+    <div className="w-full lg:w-56 shrink-0">
       <ul className="space-y-1 text-sm text-gray-800">
         {sections.map((section, index) => (
           <React.Fragment key={index}>
@@ -104,22 +99,22 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 {section.link === "delete-account" ? (
                   <button
                     onClick={() => setIsDeleteModalOpen(true)}
-                    className={`block w-full text-left py-2 transition-colors font-medium text-red-600 hover:text-red-700`}
+                    className="block w-full text-left py-2 transition-colors font-medium text-red-600 hover:text-red-700"
                   >
                     {section.name}
                   </button>
                 ) : (
                   <Link
                     href={getHref(section.link)}
-                    className={`block py-2 transition-colors
-  ${
-    activeSection === section.link
-      ? "font-semibold text-[#a97f0f]"
-      : "text-black font-medium hover:text-[#a97f0f]"
-  }
-  ${section.link === "overview" ? "text-[#a97f0f]" : ""}
-  ${section.isDanger ? "text-red-600 hover:text-red-700" : ""}
-`}
+                    onClick={() => onSelectSection?.(section.link)}
+                    className={`block py-2 transition-colors font-medium
+                      ${
+                        activeSection === section.link
+                          ? "font-semibold text-[#a97f0f]"
+                          : "text-black hover:text-[#a97f0f]"
+                      }
+                      ${section.isDanger ? "text-red-600 hover:text-red-700" : ""}
+                    `}
                   >
                     {section.name}
                   </Link>

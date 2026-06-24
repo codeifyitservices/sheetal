@@ -657,7 +657,12 @@ const AddressPageInner = () => {
           },
         }));
 
-        const totalPayable = netItemsTotal + shippingCharges + platformFee;
+        // When continuing without coupon (bypassCouponRestriction=true), React state
+        // hasn't re-rendered yet after clearAppliedCoupon(), so effectiveCouponDiscount
+        // may still hold the old value. Compute the correct net total from scratch.
+        const couponDiscountForTotal = bypassCouponRestriction ? 0 : effectiveCouponDiscount;
+        const netItemsTotalForOrder = Math.max(0, grossItemsTotal - couponDiscountForTotal);
+        const totalPayable = netItemsTotalForOrder + shippingCharges + platformFee;
         const response = await createCODOrder(
           shippingAddress,
           billingAddress,

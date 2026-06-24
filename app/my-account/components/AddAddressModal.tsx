@@ -7,7 +7,8 @@ type AddressType = "Home" | "Office" | "Other";
 
 const normalizePhoneNumber = (value: string) =>
   value.replace(/\D/g, "").slice(0, 10);
-const normalizePincode = (value: string) => value.replace(/\D/g, "").slice(0, 6);
+const normalizePincode = (value: string) =>
+  value.replace(/\D/g, "").slice(0, 6);
 
 const normalizeAddressType = (value?: string): AddressType => {
   if (value === "Office" || value === "Other") return value;
@@ -55,7 +56,6 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
 }) => {
   const [formData, setFormData] = useState(defaultState);
 
-  // Reset or Populate form when modal opens or initialData changes
   React.useEffect(() => {
     if (isOpen) {
       if (initialData) {
@@ -90,12 +90,12 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
             ? normalizePhoneNumber(value)
             : name === "pincode"
               ? normalizePincode(value)
-            : value,
+              : value,
     }));
   };
 
   const handleTypeChange = (type: AddressType) => {
-    setFormData((prev: AddressFormData) => ({ ...prev, addressType: type }));
+    setFormData((prev) => ({ ...prev, addressType: type }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -105,7 +105,6 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
       toast.error("Mobile number must be exactly 10 digits.");
       return;
     }
-
     if (!/^\d{6}$/.test(formData.pincode)) {
       toast.error("Pincode must be exactly 6 digits.");
       return;
@@ -116,8 +115,8 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">
-      <div className="bg-white w-full max-w-lg mx-4 shadow-lg overflow-hidden relative animate-fadeIn">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60">
+      <div className="bg-white w-full sm:max-w-lg sm:mx-4 shadow-lg overflow-hidden relative animate-fadeIn rounded-t-2xl sm:rounded-none">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-100">
           <h4 className="text-lg font-bold text-gray-900">
@@ -132,10 +131,10 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-4 text-sm">
             {/* Name Row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-700 font-medium">
                   First Name *
@@ -201,7 +200,7 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
             </div>
 
             {/* Pincode & City */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-700 font-medium">
                   Pincode *
@@ -219,7 +218,9 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
                 />
               </div>
               <div className="flex flex-col">
-                <label className="mb-1 text-gray-700 font-medium">City *</label>
+                <label className="mb-1 text-gray-700 font-medium">
+                  City *
+                </label>
                 <input
                   type="text"
                   name="city"
@@ -232,7 +233,7 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
             </div>
 
             {/* State & Country */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-700 font-medium">
                   State *
@@ -266,7 +267,7 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
               <label className="mb-2 text-gray-700 font-medium">
                 Save this address as (optional)
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3 flex-wrap">
                 {(["Home", "Office", "Other"] as AddressType[]).map((type) => (
                   <button
                     key={type}
@@ -303,7 +304,7 @@ const AddAddressModal: React.FC<AddAddressModalProps> = ({
             <div className="pt-4 text-center">
               <button
                 type="submit"
-                className="bg-[#73561e] hover:bg-[#73561e] text-white font-semibold py-3 px-8 rounded transition-colors uppercase tracking-wider text-sm cursor-pointer"
+                className="w-full sm:w-auto bg-[#73561e] hover:bg-[#73561e] text-white font-semibold py-3 px-8 rounded transition-colors uppercase tracking-wider text-sm cursor-pointer"
               >
                 Save & Continue
               </button>

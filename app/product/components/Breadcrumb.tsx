@@ -13,7 +13,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
   categorySlug,
 }) => {
   return (
-    <div className="container mx-auto px-4 md:px-8 py-4 pt-[120px] md:pt-[140px]">
+    <div className="container mx-auto px-4 md:px-8 py-4 pt-20 md:pt-30">
       <ul className="flex items-center text-xs md:text-sm text-gray-500">
         <li>
           <Link href="/" className="text-[#6a3f07] text-[15px]">
