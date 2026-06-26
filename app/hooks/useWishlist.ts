@@ -130,7 +130,7 @@ export const useWishlist = (): UseWishlistReturn => {
             msg.includes("unauthorized") ||
             msg.includes("not logged")
           ) {
-            setIsLoginModalOpen(true);
+            router.push("/login");
             return;
           }
           toast.error(response.message || "Failed to update wishlist.");
@@ -146,7 +146,7 @@ export const useWishlist = (): UseWishlistReturn => {
         
         const error = err as ErrorLike;
         if (isUnauthorized(error)) {
-          setIsLoginModalOpen(true);
+          router.push("/login");
           return;
         }
         toast.error("Could not update wishlist. Please try again.");

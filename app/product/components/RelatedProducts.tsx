@@ -1,7 +1,10 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import ProductCard from "./ProductCard";
 import Image from "next/image";
+import { fetchProducts } from "../../services/productService";
+
+const RV_KEY = "__rv__";
 
 interface RelatedProductItem {
   id: string;
@@ -102,16 +105,82 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({
   onToggleWishlist,
   currentSlug,
 }) => {
-  const recentlyViewedProducts = useMemo(() => {
-    if (typeof window === "undefined") return [];
+  const [recentlyViewedProducts, setRecentlyViewedProducts] = useState<
+    RelatedProductItem[]
+  >([]);
 
-    try {
-      const raw = localStorage.getItem("__rv__");
-      const parsed = raw ? (JSON.parse(raw) as RelatedProductItem[]) : [];
-      return parsed.filter((product) => product.id !== currentSlug);
-    } catch {
-      return [];
-    }
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let cancelled = false;
+
+    const validateAndLoad = async () => {
+      try {
+        // 1. Read raw entries from localStorage
+        const raw = localStorage.getItem(RV_KEY);
+        const parsed: RelatedProductItem[] = raw ? JSON.parse(raw) : [];
+
+        // 2. Exclude the currently viewed product
+        const candidates = parsed.filter((p) => p.id !== currentSlug);
+        if (candidates.length === 0) return;
+
+        // 3. Collect all productIds that have a mongo _id stored
+        const idsWithMongoId = candidates
+          .filter((p) => p.productId)
+          .map((p) => p.productId as string);
+
+        if (idsWithMongoId.length === 0) {
+          // No productIds to validate — show as-is (legacy entries)
+          if (!cancelled) setRecentlyViewedProducts(candidates);
+          return;
+        }
+
+        // 4. Ask the server which of those IDs are still Active
+        const res = await fetchProducts({
+          ids: idsWithMongoId.join(","),
+          status: "Active",
+          limit: 12,
+        });
+
+        if (cancelled) return;
+
+        if (res.success && Array.isArray(res.products)) {
+          const activeIds = new Set(res.products.map((p) => p._id));
+
+          // 5. Keep only entries that are still active, preserving original order
+          const active = candidates.filter(
+            (p) => !p.productId || activeIds.has(p.productId),
+          );
+
+          // 6. Write the cleaned list back to localStorage (prune deleted products)
+          const fullList = parsed.filter(
+            (p) =>
+              p.id === currentSlug || // keep current (it will be filtered on next visit)
+              !p.productId ||
+              activeIds.has(p.productId),
+          );
+          try {
+            localStorage.setItem(RV_KEY, JSON.stringify(fullList));
+          } catch {
+            // localStorage write failed — not critical
+          }
+
+          setRecentlyViewedProducts(active);
+        } else {
+          // Server error — fall back to showing cached entries unfiltered
+          setRecentlyViewedProducts(candidates);
+        }
+      } catch {
+        // Parsing or network error — show nothing to be safe
+        setRecentlyViewedProducts([]);
+      }
+    };
+
+    validateAndLoad();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentSlug]);
 
   const hasSimilarProducts = similarProducts.length > 0;
