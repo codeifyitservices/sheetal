@@ -179,8 +179,8 @@ const FooterClient = ({
                   src={logoUrl}
                   alt="Studio By Sheetal"
                   width={180}
-                  height={100}
-                  className="lg:mx-0 h-30 w-auto"
+                  height={120}
+                  className="lg:mx-0 h-[120px] w-[180px] object-contain"
                 />
               </Link>
               <div className="flex justify-center gap-3 text-[#f8f0b6]">

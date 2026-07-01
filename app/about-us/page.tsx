@@ -234,7 +234,7 @@ const AboutUs = async () => {
         </div>
       </div>
 
-      <div className="container-fluid bg-white">
+      <div className="container-fluid bg-white pb-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center">
             <div className="w-full lg:w-1/2 text-center mb-8 lg:mb-0">

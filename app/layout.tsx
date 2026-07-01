@@ -55,6 +55,7 @@ const outfit = Outfit({
 
 import { getSettings, getFaviconUrl } from "./services/settingsService";
 import { getSeoSettings } from "./services/seoSettingsService";
+import { headers } from "next/headers";
 import { buildGlobalSchema, parseSchemaString } from "./utils/schema";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -90,6 +91,20 @@ export default async function RootLayout({
   const globalSchema =
     parseSchemaString(seoSettings.schema) || buildGlobalSchema(seoSettings);
 
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+
+  const isSchemaLessPage = [
+    "/cart",
+    "/checkout",
+    "/login",
+    "/otp",
+    "/my-account",
+    "/wishlist",
+    "/product-list",
+    "/contact-us"
+  ].some(path => pathname === path || pathname.startsWith(path + "/"));
+
   return (
     <html lang="en">
       <body
@@ -101,7 +116,7 @@ export default async function RootLayout({
           } as CSSProperties
         }
       >
-        <JsonLd data={globalSchema} />
+        {isSchemaLessPage && <JsonLd data={globalSchema} />}
         <Toaster
           position="top-center"
           reverseOrder={false}

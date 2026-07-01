@@ -1161,8 +1161,8 @@ const NavbarInner = ({
                   src={logoUrl}
                   alt="Studio By Sheetal"
                   width={150}
-                  height={50}
-                  className="h-[55px] w-auto"
+                  height={55}
+                  className="h-[55px] w-[150px] object-contain"
                 />
               )}
             </Link>
@@ -1337,8 +1337,8 @@ const NavbarInner = ({
         src={logoUrl}
         alt="Studio By Sheetal"
         width={140}
-        height={48}
-        className="h-[44px] w-auto"
+        height={44}
+        className="h-[44px] w-[140px] object-contain"
       />
     </Link>
 

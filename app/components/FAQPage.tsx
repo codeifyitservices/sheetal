@@ -87,14 +87,14 @@ const FAQPage = async () => {
 
           {/* ── FAQ accordion list ── */}
           <div>
-            {data.faqs
+            {(data.faqs || [])
               .filter((faq) => faq.isActive)
-              .sort((a, b) => a.order - b.order)
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
               .map((faq, index) => (
                 <FaqAccordionItem
                   key={faq._id || index}
-                  question={faq.question}
-                  answer={faq.answer}
+                  question={faq.question || ""}
+                  answer={faq.answer || ""}
                 />
               ))}
           </div>
