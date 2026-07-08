@@ -241,7 +241,7 @@ const FooterClient = ({
                         <h3 className="mb-4 whitespace-nowrap text-[18px] font-normal leading-tight text-[#f8f0b4] font-optima sm:mb-6 sm:text-[22px]">
                           {block.title}
                         </h3>
-                        <div className="flex flex-col gap-1.5 border-y py-5 text-[#f8f0b6] lg:border-none sm:gap-2">
+                        <div className="flex flex-col gap-3 border-y py-5 text-[#f8f0b6] lg:border-none">
                           {block.links
                             .filter((link) => !link.hidden)
                             .map((link) => (

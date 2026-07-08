@@ -43,10 +43,10 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
     >
       {/* Modal box */}
       <div
-        className="bg-white px-6 py-4 rounded-xl shadow-2xl w-88 font-montserrat font-optima"
+        className="bg-white px-6 py-4 rounded-xl shadow-2xl w-full max-w-md mx-4 font-montserrat font-optima"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-bold text-gray-800 mb-3">
+        <h2 className="text-lg font-bold text-gray-800 mb-3">
           {isWishlistMode
             ? `Move ${itemCount} Item${itemCount !== 1 ? "s" : ""} to Wishlist`
             : isBulkAction
