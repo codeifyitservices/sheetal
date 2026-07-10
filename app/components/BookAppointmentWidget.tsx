@@ -183,38 +183,43 @@ const BookAppointmentWidget: React.FC = () => {
               <X/>
             </button>
 
-            <h2 className="font-semibold text-[#5a3e10] mb-1 tracking-wide">
-              Book An Appointment
-            </h2>
-            <p className="text-xs text-gray-400 mb-6">
-              Fields marked <span className="text-red-500">*</span> are required
-            </p>
-
             {submitted ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-14 h-14 rounded-full bg-[#bd9951] flex items-center justify-center">
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+              <>
+                <h2 className="font-semibold text-[#5a3e10] mb-6 tracking-wide text-center text-2xl font-optima">
+                  Thank You!
+                </h2>
+                <div className="flex flex-col items-center justify-center py-6 gap-4">
+                  <div className="w-16 h-16 rounded-full bg-[#bd9951] flex items-center justify-center shadow-md">
+                    <svg
+                      width="32"
+                      height="32"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <p className="text-[#5a3e10] font-semibold text-center text-lg mt-2 font-optima leading-snug">
+                    Your appointment request has been submitted successfully.
+                  </p>
+                  <p className="text-gray-600 text-sm text-center leading-relaxed max-w-sm font-[family-name:var(--font-montserrat)]">
+                    Our team will review your request and get back to you soon with the confirmation details.
+                  </p>
                 </div>
-                <p className="text-[#5a3e10] font-semibold text-base">
-                  Appointment Booked!
-                </p>
-                <p className="text-gray-500 text-sm text-center">
-                  We'll get in touch with you shortly.
-                </p>
-              </div>
+              </>
             ) : (
-              <div className="flex flex-col gap-5">
+              <>
+                <h2 className="font-semibold text-[#5a3e10] mb-1 tracking-wide">
+                  Book An Appointment
+                </h2>
+                <p className="text-xs text-gray-400 mb-6">
+                  Fields marked <span className="text-red-500">*</span> are required
+                </p>
+                <div className="flex flex-col gap-5">
                 <div>
                   <Label text="Name" />
                   <input
@@ -317,7 +322,8 @@ const BookAppointmentWidget: React.FC = () => {
                   </button>
                 </div>
               </div>
-            )}
+            </>
+          )}
           </div>
         </div>
       )}

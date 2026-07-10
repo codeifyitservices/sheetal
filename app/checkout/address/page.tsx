@@ -168,12 +168,24 @@ const AddressPageInner = () => {
 
   const buyNowItem = (() => {
     const param = searchParams.get("buynow");
-    if (!param) return null;
-    try {
-      return JSON.parse(decodeURIComponent(param));
-    } catch {
-      return null;
+    if (param) {
+      try {
+        return JSON.parse(decodeURIComponent(param));
+      } catch {
+        // Fall back to sessionStorage if query param parsing fails
+      }
     }
+    if (typeof window !== "undefined") {
+      const buyNowStr = sessionStorage.getItem("buy_now_item");
+      if (buyNowStr) {
+        try {
+          return JSON.parse(buyNowStr);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
   })();
 
   const normalizeQuantity = (value: unknown) => {

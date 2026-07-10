@@ -504,6 +504,10 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       variantImage: variantImageUrl,
     };
 
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("buy_now_item", JSON.stringify(buyNowItem));
+    }
+
     const encoded = encodeURIComponent(JSON.stringify(buyNowItem));
     const checkoutUrl = `/checkout/address?buynow=${encoded}`;
     if (!isAuthenticated()) {

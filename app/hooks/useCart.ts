@@ -413,6 +413,8 @@ export const useCart = (): UseCartReturn => {
         return;
       }
 
+      let finalItems: CartItem[] = [];
+
       if (isAuthenticated()) {
         // ── Authenticated: fetch from server ──
         const response: CartApiResponse = await fetchCart();
@@ -426,21 +428,55 @@ export const useCart = (): UseCartReturn => {
           if (validItems.length === 0) {
             const guestItems = readGuestCart();
             if (guestItems.length > 0) {
-              setCart(commitCartSnapshot(guestToCartItems(guestItems)));
+              finalItems = guestToCartItems(guestItems);
               void mergeGuestCartOnLogin();
-              return;
+            } else {
+              finalItems = [];
             }
+          } else {
+            finalItems = validItems;
           }
-
-          setCart(commitCartSnapshot(validItems));
         } else {
           setError("Failed to fetch cart");
         }
       } else {
         // ── Guest: read from localStorage ──
         const guestItems = readGuestCart();
-        setCart(commitCartSnapshot(guestToCartItems(guestItems)));
+        finalItems = guestToCartItems(guestItems);
       }
+
+      // Apply the Buy Now override if active and on checkout/cart page (not success page)
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname;
+        const isCartOrCheckout = path === "/cart" || path.startsWith("/checkout");
+        const isSuccessPage = path === "/checkout/success";
+
+        if (isCartOrCheckout && !isSuccessPage) {
+          const buyNowStr = sessionStorage.getItem("buy_now_item");
+          if (buyNowStr) {
+            try {
+              const buyNowObj = JSON.parse(buyNowStr);
+              const buyNowCartItem: CartItem = {
+                _id: "buynow-item",
+                product: buyNowObj.product,
+                variantId: buyNowObj.variantId,
+                quantity: buyNowObj.quantity,
+                color: buyNowObj.color,
+                size: buyNowObj.size,
+                variantImage: buyNowObj.variantImage,
+                price: buyNowObj.price,
+                discountPrice: buyNowObj.discountPrice,
+              };
+              // Set the cart to display ONLY the Buy Now item
+              finalItems = [buyNowCartItem];
+            } catch (e) {
+              console.error("Error parsing buy_now_item from sessionStorage:", e);
+            }
+          }
+        }
+      }
+
+      setCart(commitCartSnapshot(finalItems));
     } catch (error: unknown) {
       console.error("Error loading cart:", error);
       setError(
@@ -608,6 +644,19 @@ export const useCart = (): UseCartReturn => {
    */
   const removeFromCart = useCallback(
     async (itemId: string, options?: { silent?: boolean }) => {
+      if (itemId === "buynow-item") {
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("buy_now_item");
+        }
+        setCart(commitCartSnapshot([]));
+        dispatchCartUpdated();
+        resetCoupon();
+        if (!options?.silent) {
+          toast.success("Item removed from cart!");
+        }
+        return;
+      }
+
       // 1. Snapshot for rollback
       const previousCart = [...cart];
 
@@ -929,6 +978,36 @@ export const useCart = (): UseCartReturn => {
    */
   const updateCartItemQuantity = useCallback(
     async (itemId: string, quantity: number) => {
+      if (itemId === "buynow-item") {
+        if (typeof window !== "undefined") {
+          const buyNowStr = sessionStorage.getItem("buy_now_item");
+          if (buyNowStr) {
+            try {
+              const buyNowObj = JSON.parse(buyNowStr);
+              if (quantity <= 0) {
+                sessionStorage.removeItem("buy_now_item");
+              } else {
+                buyNowObj.quantity = quantity;
+                sessionStorage.setItem("buy_now_item", JSON.stringify(buyNowObj));
+              }
+            } catch (e) {
+              console.error("Error updating buy_now_item quantity:", e);
+            }
+          }
+        }
+
+        const nextCart =
+          quantity <= 0
+            ? []
+            : cart.map((item) =>
+                item._id === itemId ? { ...item, quantity } : item,
+              );
+        setCart(commitCartSnapshot(nextCart));
+        dispatchCartUpdated();
+        resetCoupon();
+        return;
+      }
+
       // 1. Snapshot for rollback
       const previousCart = [...cart];
 

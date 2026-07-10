@@ -56,6 +56,9 @@ const CartItemsList: React.FC<CartItemsListProps> = ({
     `This item only has ${count} left.`;
 
   const getItemAvailableStock = (item: CartItem) => {
+    if (item._id === "buynow-item") {
+      return 99999;
+    }
     if (typeof item.availableStock === "number" && item.availableStock >= 0) {
       return item.availableStock;
     }
