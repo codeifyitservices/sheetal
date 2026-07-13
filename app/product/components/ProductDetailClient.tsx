@@ -268,40 +268,95 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         const selfId = res.data._id;
         const categoryId = res.data.category?._id;
 
-        const [tier1Res, tier2Res] = await Promise.allSettled([
-          categoryId && productFabrics.length > 0 && currentMinPrice > 0
-            ? fetchProducts({
-                category: categoryId,
-                fabric: productFabrics[0],
-                minPrice: Math.max(0, currentMinPrice - 2000),
-                maxPrice: currentMinPrice + 2000,
-                limit: 50,
-                status: "Active",
-              })
-            : Promise.resolve(null),
-          categoryId && currentMinPrice > 0
-            ? fetchProducts({
-                category: categoryId,
-                minPrice: Math.max(0, currentMinPrice - 2000),
-                maxPrice: currentMinPrice + 2000,
-                limit: 50,
-                status: "Active",
-              })
-            : Promise.resolve(null),
-        ]);
+        // Admin-curated similar products (already populated by backend)
+        const adminPicked: Product[] = Array.isArray(res.data.similarProducts)
+          ? res.data.similarProducts.filter(
+              (p: Product) => p && p._id && p._id !== selfId,
+            )
+          : [];
 
-        const seen = new Set<string>();
+        const seen = new Set<string>([selfId]);
         const allFetched: Product[] = [];
-        for (const result of [tier1Res, tier2Res]) {
-          if (result.status === "fulfilled" && result.value?.success) {
-            for (const p of result.value.products ?? []) {
-              if (p._id !== selfId && !seen.has(p._id)) {
-                seen.add(p._id);
-                allFetched.push(p);
+
+        // 1. Place admin-selected products first, in exact order
+        for (const p of adminPicked) {
+          if (!seen.has(p._id)) {
+            seen.add(p._id);
+            allFetched.push(p);
+          }
+        }
+
+        // 2. Append dynamic fallback only if no admin picks OR to pad after them
+        if (adminPicked.length === 0) {
+          // No admin picks → use full dynamic fallback (existing behaviour)
+          const [tier1Res, tier2Res] = await Promise.allSettled([
+            categoryId && productFabrics.length > 0 && currentMinPrice > 0
+              ? fetchProducts({
+                  category: categoryId,
+                  fabric: productFabrics[0],
+                  minPrice: Math.max(0, currentMinPrice - 2000),
+                  maxPrice: currentMinPrice + 2000,
+                  limit: 50,
+                  status: "Active",
+                })
+              : Promise.resolve(null),
+            categoryId && currentMinPrice > 0
+              ? fetchProducts({
+                  category: categoryId,
+                  minPrice: Math.max(0, currentMinPrice - 2000),
+                  maxPrice: currentMinPrice + 2000,
+                  limit: 50,
+                  status: "Active",
+                })
+              : Promise.resolve(null),
+          ]);
+
+          for (const result of [tier1Res, tier2Res]) {
+            if (result.status === "fulfilled" && result.value?.success) {
+              for (const p of result.value.products ?? []) {
+                if (!seen.has(p._id)) {
+                  seen.add(p._id);
+                  allFetched.push(p);
+                }
+              }
+            }
+          }
+        } else {
+          // Admin picks exist → append dynamic fallbacks after them (deduped)
+          const [tier1Res, tier2Res] = await Promise.allSettled([
+            categoryId && productFabrics.length > 0 && currentMinPrice > 0
+              ? fetchProducts({
+                  category: categoryId,
+                  fabric: productFabrics[0],
+                  minPrice: Math.max(0, currentMinPrice - 2000),
+                  maxPrice: currentMinPrice + 2000,
+                  limit: 50,
+                  status: "Active",
+                })
+              : Promise.resolve(null),
+            categoryId && currentMinPrice > 0
+              ? fetchProducts({
+                  category: categoryId,
+                  minPrice: Math.max(0, currentMinPrice - 2000),
+                  maxPrice: currentMinPrice + 2000,
+                  limit: 50,
+                  status: "Active",
+                })
+              : Promise.resolve(null),
+          ]);
+
+          for (const result of [tier1Res, tier2Res]) {
+            if (result.status === "fulfilled" && result.value?.success) {
+              for (const p of result.value.products ?? []) {
+                if (!seen.has(p._id)) {
+                  seen.add(p._id);
+                  allFetched.push(p);
+                }
               }
             }
           }
         }
+
         setSimilarProducts(allFetched);
 
         // ── Recently viewed ────────────────────────────────────────────
@@ -707,19 +762,25 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
     product.variants.find((variant) => variant.color?.name === selectedColor) ||
     null;
 
+  const adminPickedIds = new Set<string>(
+    Array.isArray(product.similarProducts)
+      ? (product.similarProducts as Array<{ _id: string }>)
+          .filter((p) => p && p._id)
+          .map((p, i) => p._id)
+      : [],
+  );
+
   const relatedProductsData: RelatedProduct[] = similarProducts
-    .map((p: Product) => {
+    .map((p: Product, idx: number) => {
       let minPrice = Infinity;
       let minMRP = Infinity;
 
       p.variants.forEach((variant) => {
         variant.sizes.forEach((size) => {
           if (sizeHasDiscount(size)) {
-            // Has a real discount → track both MRP and selling price
             if (size.price < minMRP) minMRP = size.price;
             if (size.discountPrice < minPrice) minPrice = size.discountPrice;
           } else {
-            // No discount → selling price is just price, no MRP to show
             if (size.price > 0 && size.price < minPrice) minPrice = size.price;
           }
         });
@@ -732,6 +793,8 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         minMRP > 0 && minPrice < minMRP
           ? `${Math.round(((minMRP - minPrice) / minMRP) * 100)}%`
           : "0%";
+
+      const isAdminPick = adminPickedIds.has(p._id);
 
       return {
         id: p.slug,
@@ -746,6 +809,9 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         discount: currentDiscount,
         soldOut: p.stock <= 0,
         rating: p.averageRating || 0,
+        _isAdminPick: isAdminPick,
+        // Admin picks keep their original index; fallbacks sort by relevance after
+        _sortKey: isAdminPick ? idx : 10000 + idx,
         _sameCategory: p.category?._id === product.category?._id,
         _sameFabric: (p.fabric ?? []).some((f: string) =>
           productFabricSet.has(f.trim().toLowerCase()),
@@ -753,11 +819,15 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       };
     })
     .sort((a, b) => {
+      // Admin picks first (preserve order), then fallbacks sorted by relevance
+      if (a._isAdminPick && b._isAdminPick) return a._sortKey - b._sortKey;
+      if (a._isAdminPick) return -1;
+      if (b._isAdminPick) return 1;
       const score = (x: typeof a) =>
         (x._sameCategory ? 4 : 0) + (x._sameFabric ? 2 : 0);
       return score(b) - score(a);
     })
-    .map(({ _sameCategory, _sameFabric, ...rest }) => rest);
+    .map(({ _sameCategory, _sameFabric, _isAdminPick, _sortKey, ...rest }) => rest);
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
