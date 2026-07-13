@@ -15,9 +15,13 @@ export async function getFaqMetadata(): Promise<Metadata> {
   ]);
 
   const title =
-    data?.metaTitle || data?.pageTitle || "Frequently Asked Questions";
+    data?.metaTitle ||
+    (data?.pageTitle
+      ? `${data.pageTitle} | ${seoSettings.websiteName || "Studio By Sheetal"}`
+      : `Frequently Asked Questions | ${seoSettings.websiteName || "Studio By Sheetal"}`);
   const description =
     data?.metaDescription ||
+    seoSettings.organizationDescription ||
     `Find answers to frequently asked questions about ${seoSettings.websiteName || "Studio By Sheetal"}`;
   const canonical =
     data?.canonicalUrl ||

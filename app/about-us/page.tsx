@@ -32,9 +32,11 @@ export async function generateMetadata(): Promise<Metadata> {
     getSeoSettings(),
   ]);
 
-  const title = data?.metaTitle || "About Us | Studio By Sheetal";
+  const title =
+    data?.metaTitle || `About Us | ${seoSettings?.websiteName || "Studio By Sheetal"}`;
   const description =
     data?.metaDescription ||
+    seoSettings?.organizationDescription ||
     "Learn more about Studio By Sheetal, our journey since 2017, our mission to provide quality ethnic wear, and the craftsmanship behind our sarees.";
   const canonical =
     data?.canonicalUrl ||

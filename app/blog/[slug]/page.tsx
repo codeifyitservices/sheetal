@@ -10,6 +10,7 @@ import {
   getBlogs,
   getBlogImageUrl,
 } from "@/app/services/blogService";
+import { getSeoSettings } from "../../services/seoSettingsService";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -22,22 +23,31 @@ export async function generateMetadata({
   const { slug } = resolvedParams;
 
   try {
-    const blogData = await getBlogBySlug(slug, { incrementView: false });
+    const [blogData, seoSettings] = await Promise.all([
+      getBlogBySlug(slug, { incrementView: false }),
+      getSeoSettings(),
+    ]);
 
     if (!blogData.success || !blogData.data) {
       return {
-        title: "Blog Not Found | Studio By Sheetal",
+        title: `Blog Not Found | ${seoSettings?.websiteName || "Studio By Sheetal"}`,
         description: "The requested blog post could not be found.",
       };
     }
 
     const blog = blogData.data;
-    const title = blog.metaTitle || blog.title;
-    const description = blog.metaDescription || blog.excerpt;
+    const title =
+      blog.metaTitle ||
+      `${blog.title} | ${seoSettings?.websiteName || "Studio By Sheetal"}`;
+    const description =
+      blog.metaDescription ||
+      blog.excerpt ||
+      seoSettings?.organizationDescription ||
+      "";
     const keywords = blog.metaKeywords || blog.tags?.join(", ") || "";
     const canonical =
       blog.canonicalUrl ||
-      `https://sheetalbensarees.com/blog/${blog.slug || slug}`;
+      `${seoSettings?.websiteUrl || "https://studiobysheetal.com"}/blog/${blog.slug || slug}`;
     const imageUrl = blog.ogImage?.url || getBlogImageUrl(blog);
 
     return {
@@ -51,7 +61,7 @@ export async function generateMetadata({
         title,
         description,
         url: canonical,
-        siteName: "Studio By Sheetal",
+        siteName: seoSettings?.websiteName || "Studio By Sheetal",
         images: imageUrl
           ? [
               {

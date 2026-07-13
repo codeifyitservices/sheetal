@@ -70,9 +70,14 @@ export async function getPolicyMetadata(slug: string): Promise<Metadata> {
       content: "",
     };
 
-  const title = data?.metaTitle || data?.title || fallback.title;
+  const title =
+    data?.metaTitle ||
+    (data?.title
+      ? `${data.title} | ${seoSettings.websiteName || "Studio By Sheetal"}`
+      : `${fallback.title} | ${seoSettings.websiteName || "Studio By Sheetal"}`);
   const description =
     data?.metaDescription ||
+    seoSettings.organizationDescription ||
     `Read the ${fallback.title} of ${seoSettings.websiteName || "Studio By Sheetal"}`;
   const canonical =
     data?.canonicalUrl ||

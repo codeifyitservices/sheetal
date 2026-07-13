@@ -29,8 +29,12 @@ export async function generateMetadata({
   if (!cat) {
     const page = await fetchStaticPageBySlug(category);
     if (page) {
-      const title = page.metaTitle || page.title;
-      const description = page.metaDescription || "";
+      const title =
+        page.metaTitle ||
+        (page.title
+          ? `${page.title} | ${seoSettings.websiteName || "Studio By Sheetal"}`
+          : (seoSettings.websiteName || "Studio By Sheetal"));
+      const description = page.metaDescription || seoSettings.organizationDescription || "";
       const canonical =
         page.canonicalUrl ||
         `${seoSettings.websiteUrl || "https://studiobysheetal.com"}/${page.slug}`;
@@ -68,11 +72,12 @@ export async function generateMetadata({
     };
   }
 
-  const title = cat.metaTitle || `${cat.name} | Studio By Sheetal`;
+  const title = cat.metaTitle || `${cat.name} | ${seoSettings.websiteName || "Studio By Sheetal"}`;
   const description =
     cat.metaDescription ||
     cat.description ||
-    `Shop ${cat.name} at Studio By Sheetal`;
+    seoSettings.organizationDescription ||
+    `Shop ${cat.name} at ${seoSettings.websiteName || "Studio By Sheetal"}`;
   const ogImageUrl = cat.ogImage || cat.mainImage?.url || "";
   const canonical =
     cat.canonicalUrl ||

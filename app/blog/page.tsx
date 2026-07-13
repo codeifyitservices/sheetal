@@ -15,9 +15,14 @@ export async function generateMetadata(): Promise<Metadata> {
     getSeoSettings(),
   ]);
 
-  const title = data?.metaTitle || data?.title || "Blogs | Studio By Sheetal";
+  const title =
+    data?.metaTitle ||
+    (data?.title
+      ? `${data.title} | ${seoSettings?.websiteName || "Studio By Sheetal"}`
+      : `Blogs | ${seoSettings?.websiteName || "Studio By Sheetal"}`);
   const description =
     data?.metaDescription ||
+    seoSettings?.organizationDescription ||
     "Read our latest blogs about ethnic wear, styling tips, saree trends, and the stories behind our collections.";
   const canonical =
     data?.canonicalUrl ||

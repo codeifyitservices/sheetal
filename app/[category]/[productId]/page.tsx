@@ -43,11 +43,13 @@ export async function generateMetadata({
         ? product.discountPrice
         : product.price;
 
-    const title = product.metaTitle || `${product.name} | Studio By Sheetal`;
+    const title = product.metaTitle || `${product.name} | ${seoSettings.websiteName || "Studio By Sheetal"}`;
     const description =
       product.metaDescription ||
       product.shortDescription ||
-      product.description?.substring(0, 160);
+      product.description?.substring(0, 160) ||
+      seoSettings.organizationDescription ||
+      "";
     const keywords =
       product.metaKeywords ||
       `${product.name}, ${product.category?.name}, buy ${product.name}`;
