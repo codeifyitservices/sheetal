@@ -269,16 +269,54 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         const categoryId = res.data.category?._id;
 
         // Admin-curated similar products (already populated by backend)
-        const adminPicked: Product[] = Array.isArray(res.data.similarProducts)
-          ? res.data.similarProducts.filter(
-              (p: Product) => p && p._id && p._id !== selfId,
-            )
-          : [];
+        let adminPicked: Product[] = [];
+        if (Array.isArray(res.data.similarProducts)) {
+          const idsToFetch: string[] = [];
+          const populatedProducts: Product[] = [];
+
+          res.data.similarProducts.forEach((p: any) => {
+            if (p) {
+              if (typeof p === "string") {
+                if (p !== selfId) {
+                  idsToFetch.push(p);
+                }
+              } else if (p._id && p._id !== selfId) {
+                populatedProducts.push(p);
+              }
+            }
+          });
+
+          if (idsToFetch.length > 0) {
+            try {
+              const fetchRes = await fetchProducts({
+                ids: idsToFetch.join(","),
+                status: "Active",
+              });
+              if (fetchRes?.success && Array.isArray(fetchRes.products)) {
+                // Keep the exact order of the original idsToFetch
+                const fetchedMap = new Map<string, Product>(
+                  fetchRes.products.map((p) => [p._id, p])
+                );
+                const fetchedInOrder = idsToFetch
+                  .map((id) => fetchedMap.get(id))
+                  .filter((p): p is Product => !!p);
+                adminPicked = [...populatedProducts, ...fetchedInOrder];
+              } else {
+                adminPicked = populatedProducts;
+              }
+            } catch (err) {
+              console.error("Failed to fetch admin curated similar products by ID:", err);
+              adminPicked = populatedProducts;
+            }
+          } else {
+            adminPicked = populatedProducts;
+          }
+        }
 
         const seen = new Set<string>([selfId]);
         const allFetched: Product[] = [];
 
-        // 1. Place admin-selected products first, in exact order
+        // 1. Admin picks go first in their exact saved order
         for (const p of adminPicked) {
           if (!seen.has(p._id)) {
             seen.add(p._id);
@@ -286,74 +324,101 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
           }
         }
 
-        // 2. Append dynamic fallback only if no admin picks OR to pad after them
-        if (adminPicked.length === 0) {
-          // No admin picks → use full dynamic fallback (existing behaviour)
-          const [tier1Res, tier2Res] = await Promise.allSettled([
-            categoryId && productFabrics.length > 0 && currentMinPrice > 0
-              ? fetchProducts({
-                  category: categoryId,
-                  fabric: productFabrics[0],
-                  minPrice: Math.max(0, currentMinPrice - 2000),
-                  maxPrice: currentMinPrice + 2000,
-                  limit: 50,
-                  status: "Active",
-                })
-              : Promise.resolve(null),
-            categoryId && currentMinPrice > 0
-              ? fetchProducts({
-                  category: categoryId,
-                  minPrice: Math.max(0, currentMinPrice - 2000),
-                  maxPrice: currentMinPrice + 2000,
-                  limit: 50,
-                  status: "Active",
-                })
-              : Promise.resolve(null),
-          ]);
+        // 2. Dynamic fallback — no price cap; score by attributes + price proximity
+        const [tier1Res, tier2Res] = await Promise.allSettled([
+          // Tier 1: same category + same fabric (if available)
+          categoryId && productFabrics.length > 0
+            ? fetchProducts({
+                category: categoryId,
+                fabric: productFabrics[0],
+                limit: 80,
+                status: "Active",
+              })
+            : Promise.resolve(null),
+          // Tier 2: same category only (broader net)
+          categoryId
+            ? fetchProducts({
+                category: categoryId,
+                limit: 80,
+                status: "Active",
+              })
+            : Promise.resolve(null),
+        ]);
 
-          for (const result of [tier1Res, tier2Res]) {
-            if (result.status === "fulfilled" && result.value?.success) {
-              for (const p of result.value.products ?? []) {
-                if (!seen.has(p._id)) {
-                  seen.add(p._id);
-                  allFetched.push(p);
-                }
+        // Attribute sets from the current product (lower-cased for comparison)
+        const toSet = (arr: string[] | undefined) =>
+          new Set((arr ?? []).map((v) => v.trim().toLowerCase()));
+
+        const selfFabrics   = toSet(res.data.fabric);
+        const selfWearType  = toSet(res.data.wearType);
+        const selfOccasion  = toSet(res.data.occasion);
+        const selfTags      = toSet(res.data.tags);
+        const selfStyle     = toSet(res.data.style);
+        const selfWork      = toSet(res.data.work);
+
+        // Helper: count overlapping values between two sets
+        const overlap = (selfSet: Set<string>, otherArr: string[] | undefined) =>
+          (otherArr ?? []).filter((v) => selfSet.has(v.trim().toLowerCase())).length;
+
+        // Helper: get the minimum effective price of a product
+        const getMinPrice = (p: Product): number => {
+          let min = 0;
+          p.variants?.forEach((v) => {
+            v.sizes?.forEach((s) => {
+              const ep = getEffectivePrice(s);
+              if (ep > 0 && (min === 0 || ep < min)) min = ep;
+            });
+          });
+          return min;
+        };
+
+        // Score a candidate product:
+        //  - +2 per attribute field that has at least one matching value  (max +12)
+        //  - price proximity: 0–15, dominant signal — exact match = 15, ₹5 000 away = 0
+        //    Attributes only act as tiebreakers when prices are very close.
+        const scoreProduct = (p: Product): number => {
+          let score = 0;
+
+          if (overlap(selfFabrics,  p.fabric)    > 0) score += 2;
+          if (overlap(selfWearType, p.wearType)  > 0) score += 2;
+          if (overlap(selfOccasion, p.occasion)  > 0) score += 2;
+          if (overlap(selfTags,     p.tags)      > 0) score += 2;
+          if (overlap(selfStyle,    p.style)     > 0) score += 2;
+          if (overlap(selfWork,     p.work)      > 0) score += 2;
+
+          // Price proximity bonus — 0 to 15, scaled over a ₹5 000 reference band
+          if (currentMinPrice > 0) {
+            const pPrice = getMinPrice(p);
+            if (pPrice > 0) {
+              const delta = Math.abs(pPrice - currentMinPrice);
+              score += Math.max(0, 15 - (delta / 5_000) * 15);
+            }
+          }
+
+          return score;
+        };
+
+        // Collect raw candidates from both tiers (deduplicated)
+        const rawCandidates = new Map<string, Product>();
+        for (const result of [tier1Res, tier2Res]) {
+          if (result.status === "fulfilled" && result.value?.success) {
+            for (const p of result.value.products ?? []) {
+              if (!seen.has(p._id) && !rawCandidates.has(p._id)) {
+                rawCandidates.set(p._id, p);
               }
             }
           }
-        } else {
-          // Admin picks exist → append dynamic fallbacks after them (deduped)
-          const [tier1Res, tier2Res] = await Promise.allSettled([
-            categoryId && productFabrics.length > 0 && currentMinPrice > 0
-              ? fetchProducts({
-                  category: categoryId,
-                  fabric: productFabrics[0],
-                  minPrice: Math.max(0, currentMinPrice - 2000),
-                  maxPrice: currentMinPrice + 2000,
-                  limit: 50,
-                  status: "Active",
-                })
-              : Promise.resolve(null),
-            categoryId && currentMinPrice > 0
-              ? fetchProducts({
-                  category: categoryId,
-                  minPrice: Math.max(0, currentMinPrice - 2000),
-                  maxPrice: currentMinPrice + 2000,
-                  limit: 50,
-                  status: "Active",
-                })
-              : Promise.resolve(null),
-          ]);
+        }
 
-          for (const result of [tier1Res, tier2Res]) {
-            if (result.status === "fulfilled" && result.value?.success) {
-              for (const p of result.value.products ?? []) {
-                if (!seen.has(p._id)) {
-                  seen.add(p._id);
-                  allFetched.push(p);
-                }
-              }
-            }
+        // Score and sort
+        const sorted = [...rawCandidates.values()].sort(
+          (a, b) => scoreProduct(b) - scoreProduct(a),
+        );
+
+        for (const p of sorted) {
+          if (!seen.has(p._id)) {
+            seen.add(p._id);
+            allFetched.push(p);
           }
         }
 
@@ -764,9 +829,9 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
 
   const adminPickedIds = new Set<string>(
     Array.isArray(product.similarProducts)
-      ? (product.similarProducts as Array<{ _id: string }>)
-          .filter((p) => p && p._id)
-          .map((p, i) => p._id)
+      ? (product.similarProducts as Array<{ _id: string } | string>)
+          .map((p) => (typeof p === "string" ? p : p?._id))
+          .filter((id): id is string => !!id)
       : [],
   );
 
@@ -775,8 +840,8 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       let minPrice = Infinity;
       let minMRP = Infinity;
 
-      p.variants.forEach((variant) => {
-        variant.sizes.forEach((size) => {
+      (p.variants ?? []).forEach((variant) => {
+        (variant.sizes ?? []).forEach((size) => {
           if (sizeHasDiscount(size)) {
             if (size.price < minMRP) minMRP = size.price;
             if (size.discountPrice < minPrice) minPrice = size.discountPrice;

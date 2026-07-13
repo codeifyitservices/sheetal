@@ -536,7 +536,7 @@ const DesktopMoreMenu = ({
 
       {isOpen && (
         <div className="absolute right-0 top-full pt-4 w-[280px] text-left z-[1005]">
-          <ul className="bg-[#153427]/95 backdrop-blur-md p-5 border !border-[#f5de7e] list-none m-0">
+          <ul className="bg-[#153427]/95 backdrop-blur-md p-5 border !border-[#f5de7e] list-none m-0 max-h-[60vh] overflow-y-auto">
             {items.map((item, idx) => (
               <DesktopSubMenuItem key={`${item.id}-${idx}`} item={item} />
             ))}

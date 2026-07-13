@@ -120,6 +120,7 @@ export interface Product {
 
   averageRating: number;
   totalReviews: number;
+  similarProducts?: Product[];
 }
 
 export interface ProductQueryParams {
