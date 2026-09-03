@@ -19,7 +19,12 @@ import { createRazorpayPaymentLink } from "../../services/paymentService";
 import { createCODOrder } from "../../services/orderService";
 import { useSearchParams } from "next/navigation";
 import { peekRedirectField, redirectToLogin } from "../../utils/authRedirect";
-import { getUserDetails, isAuthenticated } from "../../services/authService";
+import {
+  getUserDetails,
+  isAuthenticated,
+  logout,
+  isAuthExpiredError,
+} from "../../services/authService";
 import { useSettings } from "../../hooks/useSettings";
 import { getLogoUrl } from "../../services/settingsService";
 import { hasRedeemedCoupon, isSingleUseCoupon, markCouponRedeemed } from "../../utils/couponRedemption";
@@ -299,6 +304,13 @@ const AddressPageInner = () => {
         if (fallbackAddressId && !selectedBillingAddressIdRef.current) {
           setSelectedBillingAddressId(fallbackAddressId);
         }
+      } else if (
+        !response.success &&
+        ((response as any).unauthorized || isAuthExpiredError(response.message))
+      ) {
+        logout();
+        redirectToLogin(router);
+        return;
       }
     } catch (error) {
       console.error("Error fetching addresses", error);

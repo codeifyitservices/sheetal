@@ -9,6 +9,12 @@ import {
   Product,
 } from "../services/productService";
 import {
+  isAuthenticated,
+  logout,
+  isTokenExpired,
+  isAuthExpiredError,
+} from "../services/authService";
+import {
   dispatchWishlistUpdated,
   WISHLIST_UPDATED_EVENT,
 } from "./shopEvents";
@@ -32,15 +38,15 @@ type ErrorLike = {
   response?: { status?: number };
   status?: number;
   message?: string;
+  unauthorized?: boolean;
 };
 
 /** Detects 401-style errors from axios, fetch, or plain Error messages */
 const isUnauthorized = (err: ErrorLike): boolean =>
+  err?.unauthorized === true ||
   err?.response?.status === 401 ||
   err?.status === 401 ||
-  Boolean(err?.message?.toLowerCase().includes("unauthorized")) ||
-  Boolean(err?.message?.toLowerCase().includes("not logged in")) ||
-  Boolean(err?.message?.toLowerCase().includes("token"));
+  isAuthExpiredError(err?.message, err?.status || err?.response?.status);
 
 let cachedWishlistSnapshot: Product[] | null = null;
 
@@ -98,6 +104,12 @@ export const useWishlist = (): UseWishlistReturn => {
 
   const toggleProductInWishlist = useCallback(
     async (productId: string) => {
+      if (!isAuthenticated()) {
+        logout();
+        redirectToLogin(router);
+        return;
+      }
+
       const isCurrentlyInWishlist = optimisticWishlistIds.has(productId);
 
       // 1. Optimistically update set
@@ -123,14 +135,10 @@ export const useWishlist = (): UseWishlistReturn => {
             else next.delete(productId);
             return next;
           });
-          
-          const msg = response.message?.toLowerCase() || "";
-          if (
-            msg.includes("login") ||
-            msg.includes("unauthorized") ||
-            msg.includes("not logged")
-          ) {
-            router.push("/login");
+
+          if (isUnauthorized(response as ErrorLike)) {
+            logout();
+            redirectToLogin(router);
             return;
           }
           toast.error(response.message || "Failed to update wishlist.");
@@ -138,15 +146,16 @@ export const useWishlist = (): UseWishlistReturn => {
       } catch (err: unknown) {
         // Rollback on network error
         setOptimisticWishlistIds((prev) => {
-            const next = new Set(prev);
-            if (isCurrentlyInWishlist) next.add(productId);
-            else next.delete(productId);
-            return next;
-          });
-        
+          const next = new Set(prev);
+          if (isCurrentlyInWishlist) next.add(productId);
+          else next.delete(productId);
+          return next;
+        });
+
         const error = err as ErrorLike;
         if (isUnauthorized(error)) {
-          router.push("/login");
+          logout();
+          redirectToLogin(router);
           return;
         }
         toast.error("Could not update wishlist. Please try again.");

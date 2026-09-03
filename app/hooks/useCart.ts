@@ -22,7 +22,11 @@ import {
   getToken,
   getUserDetails,
   isAuthenticated,
+  isTokenExpired,
+  isAuthExpiredError,
+  logout,
 } from "../services/authService";
+import { storeRedirectTarget } from "../utils/authRedirect";
 import {
   CART_UPDATED_EVENT,
   dispatchCartItemAdded,
@@ -552,6 +556,25 @@ export const useCart = (): UseCartReturn => {
           return;
         }
 
+        const rawToken =
+          typeof window !== "undefined"
+            ? localStorage.getItem("token") ||
+              document.cookie
+                .split("; ")
+                .find((part) => part.startsWith("token="))
+                ?.split("=")[1]
+            : undefined;
+
+        if (rawToken && isTokenExpired(rawToken)) {
+          logout();
+          if (typeof window !== "undefined") {
+            const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+            storeRedirectTarget(currentPath);
+            window.location.href = "/login";
+          }
+          return;
+        }
+
         if (isAuthenticated()) {
           // ── Authenticated: call API ──
           const response = await addToCartApi(
@@ -564,6 +587,18 @@ export const useCart = (): UseCartReturn => {
               productName: productMeta?.name,
             });
           } else {
+            if (
+              (response as any).unauthorized ||
+              isAuthExpiredError(response.message)
+            ) {
+              logout();
+              if (typeof window !== "undefined") {
+                const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+                storeRedirectTarget(currentPath);
+                window.location.href = "/login";
+              }
+              return;
+            }
             toast.error(response.message || "Failed to add to cart.");
           }
         } else {

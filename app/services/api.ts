@@ -1,3 +1,6 @@
+import { logout, isTokenExpired, isAuthExpiredError } from "./authService";
+import { storeRedirectTarget } from "../utils/authRedirect";
+
 /**
  * Central API configuration and base fetcher
  */
@@ -7,8 +10,12 @@ export const BASE_URL =
 export const API_BASE_URL = `${BASE_URL}/api/v1`;
 
 export const handleResponse = async (res: Response) => {
-  const data = await res.json();
-  return data;
+  try {
+    const data = await res.json();
+    return data;
+  } catch {
+    return { success: false, message: res.statusText || "Request failed" };
+  }
 };
 
 /**
@@ -51,8 +58,25 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     }
   }
 
-  if (token && !requestHeaders["Authorization"]) {
-    requestHeaders["Authorization"] = `Bearer ${token}`;
+  if (token) {
+    if (isTokenExpired(token)) {
+      logout();
+      if (typeof window !== "undefined") {
+        const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (
+          !window.location.pathname.startsWith("/login") &&
+          !window.location.pathname.startsWith("/otp")
+        ) {
+          storeRedirectTarget(currentPath);
+          window.location.href = "/login";
+        }
+      }
+      return { success: false, unauthorized: true, message: "" };
+    }
+
+    if (!requestHeaders["Authorization"]) {
+      requestHeaders["Authorization"] = `Bearer ${token}`;
+    }
   }
 
   const method = (options.method || "GET").toUpperCase();
@@ -64,7 +88,42 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     headers: requestHeaders,
   });
 
-  return handleResponse(res);
+  if (res.status === 401) {
+    logout();
+    if (typeof window !== "undefined") {
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (
+        !window.location.pathname.startsWith("/login") &&
+        !window.location.pathname.startsWith("/otp")
+      ) {
+        storeRedirectTarget(currentPath);
+        window.location.href = "/login";
+      }
+    }
+    return { success: false, unauthorized: true, message: "" };
+  }
+
+  const data = await handleResponse(res);
+  if (
+    data &&
+    data.success === false &&
+    isAuthExpiredError(data.message, res.status)
+  ) {
+    logout();
+    if (typeof window !== "undefined") {
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (
+        !window.location.pathname.startsWith("/login") &&
+        !window.location.pathname.startsWith("/otp")
+      ) {
+        storeRedirectTarget(currentPath);
+        window.location.href = "/login";
+      }
+    }
+    return { ...data, unauthorized: true, message: "" };
+  }
+
+  return data;
 };
 
 /**

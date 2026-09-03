@@ -69,6 +69,43 @@ export const verifyEmailOtp = async (email: string, otp: string) => {
   });
 };
 
+export const isTokenExpired = (token?: string): boolean => {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(payloadBase64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    const decoded = JSON.parse(jsonPayload);
+    if (typeof decoded.exp !== "number") return false;
+    return decoded.exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
+};
+
+export const isAuthExpiredError = (
+  message?: string,
+  status?: number,
+): boolean => {
+  if (status === 401) return true;
+  const msg = String(message || "").toLowerCase();
+  return (
+    msg.includes("token") ||
+    msg.includes("jwt") ||
+    msg.includes("expired") ||
+    msg.includes("unauthorized") ||
+    msg.includes("login required") ||
+    msg.includes("not logged") ||
+    msg.includes("invalid token")
+  );
+};
+
 export const login = (token: string, user: User) => {
   Cookies.set(TOKEN_KEY, token, {
     expires: 7, // 7 days
@@ -84,24 +121,31 @@ export const login = (token: string, user: User) => {
 
 export const logout = () => {
   Cookies.remove(TOKEN_KEY);
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
   if (typeof window !== "undefined") {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     window.dispatchEvent(new Event(AUTH_UPDATED_EVENT));
   }
 };
 
 export const getToken = (): string | undefined => {
   const cookieToken = Cookies.get(TOKEN_KEY);
-  if (cookieToken) {
-    return cookieToken;
-  }
+  const localToken =
+    typeof window !== "undefined"
+      ? localStorage.getItem(TOKEN_KEY) || undefined
+      : undefined;
 
-  if (typeof window === "undefined") {
+  const token = cookieToken || localToken;
+  if (!token) {
     return undefined;
   }
 
-  return localStorage.getItem(TOKEN_KEY) || undefined;
+  if (isTokenExpired(token)) {
+    logout();
+    return undefined;
+  }
+
+  return token;
 };
 
 export const getUserDetails = (): User | null => {

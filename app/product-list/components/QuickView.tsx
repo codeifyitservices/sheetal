@@ -8,7 +8,11 @@ import {
   getProductImageUrl,
   getVariantGalleryUrls,
 } from "../../services/productService";
-import { isAuthenticated } from "../../services/authService";
+import {
+  isAuthenticated,
+  logout,
+  isTokenExpired,
+} from "../../services/authService";
 import ProductImageGallery from "../../product/components/ProductImageGallery";
 import StarRating from "../../product/components/StarRating";
 import { useRouter } from "next/navigation";
@@ -354,6 +358,15 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
   };
 
   const handleAddToCart = async () => {
+    const rawToken =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (rawToken && isTokenExpired(rawToken)) {
+      logout();
+      redirectToLogin(router);
+      onClose();
+      return;
+    }
+
     if (product) {
       const selectedVariant = product.variants.find(
         (variant) => variant.color?.name === selectedColor,

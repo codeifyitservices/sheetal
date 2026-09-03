@@ -11,7 +11,12 @@ import {
   Product,
   toggleWishlist as toggleWishlistApi,
 } from "../../services/productService";
-import { isAuthenticated } from "../../services/authService";
+import {
+  isAuthenticated,
+  logout,
+  isAuthExpiredError,
+} from "../../services/authService";
+import { redirectToLogin } from "../../utils/authRedirect";
 import {
   dispatchCartUpdated,
   dispatchWishlistUpdated,
@@ -29,8 +34,8 @@ const WishlistContent = () => {
     if (movingToCart) return;
 
     if (!isAuthenticated()) {
-      sessionStorage.setItem("redirect", window.location.pathname);
-      router.push("/login");
+      logout();
+      redirectToLogin(router);
       return;
     }
 
@@ -76,6 +81,14 @@ const WishlistContent = () => {
           next.delete(productId);
           return next;
         });
+        if (
+          (cartResponse as any).unauthorized ||
+          isAuthExpiredError(cartResponse.message)
+        ) {
+          logout();
+          redirectToLogin(router);
+          return;
+        }
         toast.error(cartResponse.message || "Failed to move item to cart.");
         return;
       }

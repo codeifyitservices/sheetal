@@ -29,7 +29,11 @@ import {
 } from "../../services/productService";
 import { SizeChartData } from "../../services/sizeChartService";
 import { getApiImageUrl } from "../../services/api";
-import { isAuthenticated } from "../../services/authService";
+import {
+  isAuthenticated,
+  logout,
+  isTokenExpired,
+} from "../../services/authService";
 import { useWishlist } from "../../hooks/useWishlist";
 import { useCart } from "../../hooks/useCart";
 import { redirectToLogin } from "../../utils/authRedirect";
@@ -529,6 +533,14 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
   };
 
   const handleAddToCart = async () => {
+    const rawToken =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (rawToken && isTokenExpired(rawToken)) {
+      logout();
+      redirectToLogin(router);
+      return;
+    }
+
     if (!product || !selectedSize || !selectedColor) {
       toast.error("Please select a size to add to cart.");
       return;
