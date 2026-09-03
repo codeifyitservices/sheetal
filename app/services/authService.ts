@@ -70,7 +70,7 @@ export const verifyEmailOtp = async (email: string, otp: string) => {
 };
 
 export const isTokenExpired = (token?: string): boolean => {
-  if (!token) return true;
+  if (!token) return false;
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return false;

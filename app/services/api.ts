@@ -61,16 +61,6 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   if (token) {
     if (isTokenExpired(token)) {
       logout();
-      if (typeof window !== "undefined") {
-        const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-        if (
-          !window.location.pathname.startsWith("/login") &&
-          !window.location.pathname.startsWith("/otp")
-        ) {
-          storeRedirectTarget(currentPath);
-          window.location.href = "/login";
-        }
-      }
       return { success: false, unauthorized: true, message: "" };
     }
 
@@ -90,16 +80,6 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
   if (res.status === 401) {
     logout();
-    if (typeof window !== "undefined") {
-      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      if (
-        !window.location.pathname.startsWith("/login") &&
-        !window.location.pathname.startsWith("/otp")
-      ) {
-        storeRedirectTarget(currentPath);
-        window.location.href = "/login";
-      }
-    }
     return { success: false, unauthorized: true, message: "" };
   }
 
@@ -110,16 +90,6 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     isAuthExpiredError(data.message, res.status)
   ) {
     logout();
-    if (typeof window !== "undefined") {
-      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      if (
-        !window.location.pathname.startsWith("/login") &&
-        !window.location.pathname.startsWith("/otp")
-      ) {
-        storeRedirectTarget(currentPath);
-        window.location.href = "/login";
-      }
-    }
     return { ...data, unauthorized: true, message: "" };
   }
 

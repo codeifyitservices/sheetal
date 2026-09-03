@@ -72,6 +72,14 @@ export const useWishlist = (): UseWishlistReturn => {
   }, [wishlist]);
 
   const loadWishlist = useCallback(async (showLoader: boolean = true) => {
+    if (!isAuthenticated()) {
+      setWishlist(commitWishlistSnapshot([]));
+      if (showLoader) {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (showLoader) {
       setLoading(true);
     }
