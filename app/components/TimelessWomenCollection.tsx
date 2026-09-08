@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { API_BASE_URL } from "../services/api";
+import { API_BASE_URL, getApiImageUrl } from "../services/api";
 
 interface SliderImage {
   url: string;
@@ -163,14 +163,17 @@ function SliderTrack({ slides, activeIndex }: SliderTrackProps) {
           {slides.map((img, i) => {
             const isActive = i === normalizedActiveIndex;
             const href = getLookbookHref(img.categoryLink);
+            const imgUrl = getApiImageUrl(img, "/assets/deals1.jpg");
             const imgEl = (
               <div className="relative w-full h-[310px]">
                 <Image
-                  src={img.url}
+                  src={imgUrl}
                   alt={img.alt || `Slide ${i + 1}`}
                   fill
-                  sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
                   className="object-cover"
+                  loading="lazy"
+                  quality={75}
                 />
               </div>
             );

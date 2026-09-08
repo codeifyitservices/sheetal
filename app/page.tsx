@@ -13,6 +13,8 @@ import { getSeoSettings } from "./services/seoSettingsService";
 import JsonLd from "./components/JsonLd";
 import { buildHomepageSchema, parseSchemaString } from "./utils/schema";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const [settings, homepage, seoSettings] = await Promise.all([
     getSettings(),

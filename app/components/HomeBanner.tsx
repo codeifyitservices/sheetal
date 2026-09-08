@@ -6,7 +6,7 @@ import HomeBannerCarousel, {
 async function getBanners(): Promise<BannerItem[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/banner`, {
-      next: { revalidate: 300 },
+      cache: "no-store",
     });
     const data = await response.json();
     return data?.success && Array.isArray(data?.data) ? data.data : [];

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
-import { API_BASE_URL } from "../services/api";
+import { API_BASE_URL, getApiImageUrl } from "../services/api";
 
 import { TestimonialsContent } from "../services/homepageService";
 
@@ -78,6 +78,7 @@ const Testimonials = ({ content }: { content?: TestimonialsContent }) => {
                 width={64}
                 height={64}
                 className="w-full h-full object-contain"
+                loading="lazy"
               />
             </div>
 
@@ -86,38 +87,44 @@ const Testimonials = ({ content }: { content?: TestimonialsContent }) => {
                 className="flex transition-transform duration-500 ease-out"
                 style={{ transform: `translate3d(-${activeIndex * 100}%, 0, 0)` }}
               >
-                {testimonials.map((item) => (
-                  <div key={item._id} className="min-w-full outline-none">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10">
-                      <div className="shrink-0">
-                        <div className="w-48 h-64 md:w-48 md:h-72 rounded-full overflow-hidden border-4 border-white shadow-lg bg-slate-100 flex items-center justify-center">
-                          {item.image?.url ? (
-                            <Image
-                              src={item.image.url}
-                              alt={item.image.alt || item.name}
-                              width={400}
-                              height={600}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-2xl font-black text-slate-400">
-                              {item.name?.charAt(0).toUpperCase()}
-                            </span>
-                          )}
+                {testimonials.map((item) => {
+                  const avatarUrl = getApiImageUrl(item.image, "/assets/278065131.jpg");
+                  return (
+                    <div key={item._id} className="min-w-full outline-none">
+                      <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10">
+                        <div className="shrink-0">
+                          <div className="w-48 h-64 md:w-48 md:h-72 rounded-full overflow-hidden border-4 border-white shadow-lg bg-slate-100 flex items-center justify-center">
+                            {avatarUrl ? (
+                              <Image
+                                src={avatarUrl}
+                                alt={item.image?.alt || item.name}
+                                width={400}
+                                height={600}
+                                sizes="192px"
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                quality={75}
+                              />
+                            ) : (
+                              <span className="text-2xl font-black text-slate-400">
+                                {item.name?.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-center md:text-left pt-2">
+                          <p className="text-[15px] text-gray-600 lg:pr-36 leading-relaxed mb-6 font-[family-name:var(--font-montserrat)]">
+                            &quot;{item.comment}&quot;
+                          </p>
+                          <p className="text-black font-semibold text-[15px] uppercase tracking-wide">
+                            {item.name}
+                          </p>
                         </div>
                       </div>
-
-                      <div className="text-center md:text-left pt-2">
-                        <p className="text-[15px] text-gray-600 lg:pr-36 leading-relaxed mb-6 font-[family-name:var(--font-montserrat)]">
-                          &quot;{item.comment}&quot;
-                        </p>
-                        <p className="text-black font-semibold text-[15px] uppercase tracking-wide">
-                          {item.name}
-                        </p>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
