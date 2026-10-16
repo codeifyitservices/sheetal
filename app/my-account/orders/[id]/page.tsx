@@ -22,8 +22,9 @@ type OrderStatus =
 
 interface OrderItem {
     _id: string;
-    product: string | { _id: string } | null;
+    product: string | { _id: string; slug?: string } | null;
     name: string;
+    slug?: string;
     image: string;
     price: number;
     quantity: number;
@@ -517,10 +518,12 @@ const OrderDetailPage = () => {
 
     const handleBuyAgain = (item: OrderItem) => {
         const prod = typeof item.product === "object" ? item.product : { _id: item.product };
+        const slug = item.slug || (typeof item.product === "object" ? item.product?.slug : undefined);
         const buyNowItem = {
             product: {
                 _id: prod?._id,
                 name: item.name,
+                slug,
                 mainImage: { url: item.image },
             },
             size: item.variant?.size || "—",
@@ -531,8 +534,10 @@ const OrderDetailPage = () => {
             variantImage: getApiImageUrl(item.image),
         };
 
-        const encoded = encodeURIComponent(JSON.stringify(buyNowItem));
-        router.push(`/checkout/address?buynow=${encoded}`);
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem("buy_now_item", JSON.stringify(buyNowItem));
+        }
+        router.push("/checkout/address?buynow=1");
     };
 
     if (loading) return <Skeleton />;
@@ -907,7 +912,7 @@ const OrderDetailPage = () => {
 
             {/* ── Shop more — full-width bordered button ── */}
             <Link
-                href="/shop"
+                href="/product-list"
                 className="w-full block text-center py-3 border border-[#a97f0f] text-[#a97f0f] text-sm font-semibold hover:bg-[#fdf6e8] transition-colors mt-1 mb-4"
             >
                 Shop more from SBS →

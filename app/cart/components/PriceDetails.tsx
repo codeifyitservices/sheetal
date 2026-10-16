@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ import {
 import {
   hasRedeemedCoupon,
   isSingleUseCoupon,
+  isCouponLimitReached,
 } from "@/app/utils/couponRedemption";
 import {
   consumeRedirectField,
@@ -57,11 +58,18 @@ interface CouponOption {
   code: string;
   offerType?: string;
   offerValue?: number;
+  buyQuantity?: number;
+  getQuantity?: number;
   scope?: string;
   applicableIds?: Array<{ name?: string } | string>;
   description?: string;
   minPurchase?: number;
+  minOrderAmount?: number;
   isAbandonedCartCoupon?: boolean;
+  totalUsageLimit?: number;
+  usedCount?: number;
+  usageLimitPerUser?: number;
+  usedBy?: Array<{ userId: string; count: number }>;
 }
 
 const isRecoveryCoupon = (coupon: unknown): coupon is CouponOption => {
@@ -117,6 +125,13 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
 
   const { data: settings } = useSWR("/settings", getSettings);
   const [showPlatformFeeModal, setShowPlatformFeeModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const displayCouponCode = mounted ? couponCode : "";
 
   useEffect(() => {
     if (!shouldRestoreCouponModal) {
@@ -124,6 +139,8 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
     }
 
     const timer = window.setTimeout(() => {
+      setSearchQuery("");
+      setManualMsg(null);
       setOpenCouponModal(true);
       consumeRedirectModalState("couponModalOpen");
       consumeRedirectField<string>("couponInput");
@@ -135,10 +152,15 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
 
   useEffect(() => {
     if (openCouponModal) {
+      setSearchQuery("");
+      setManualMsg(null);
       const token = getToken();
       const fetchCoupons = async () => {
         try {
-          const response = await getAllCouponsClient(token);
+          const response = await getAllCouponsClient(token, {
+            page: 1,
+            limit: 100,
+          });
           const list = response?.data?.data || response?.data || [];
           setCoupons(Array.isArray(list) ? list : []);
         } catch (error) {
@@ -206,8 +228,54 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
     }
   }, [couponMeta, openCouponModal, selectedCouponMeta, setCouponInput]);
 
+  const user = getUserDetails();
+  const currentUserId = user?.id || (user as any)?._id || null;
+
+  const currentMatchingCoupon = useMemo(() => {
+    const entered = couponInput.trim().toUpperCase();
+    if (!entered) return null;
+    return (
+      coupons.find((c) => c.code.toUpperCase() === entered) ||
+      (selectedCouponMeta &&
+      typeof selectedCouponMeta === "object" &&
+      "code" in selectedCouponMeta &&
+      (selectedCouponMeta as any).code?.toUpperCase() === entered
+        ? (selectedCouponMeta as CouponOption)
+        : null)
+    );
+  }, [couponInput, coupons, selectedCouponMeta]);
+
+  const currentCouponLimitStatus = useMemo(() => {
+    if (!currentMatchingCoupon) return { isReached: false };
+    return isCouponLimitReached(currentMatchingCoupon, currentUserId);
+  }, [currentMatchingCoupon, currentUserId]);
+
+  const isSelectedOrEnteredExhausted = useMemo(() => {
+    const entered = couponInput.trim().toUpperCase();
+    if (!entered) return false;
+
+    if (currentCouponLimitStatus.isReached) {
+      return true;
+    }
+
+    if (currentUserId && hasRedeemedCoupon(currentUserId, entered)) {
+      const meta = currentMatchingCoupon || selectedCouponMeta || couponMeta;
+      if (meta && isSingleUseCoupon(meta)) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [
+    couponInput,
+    currentCouponLimitStatus.isReached,
+    currentUserId,
+    currentMatchingCoupon,
+    selectedCouponMeta,
+    couponMeta,
+  ]);
+
   const applyCouponAndClose = () => {
-    const user = getUserDetails();
     const enteredCode = couponInput.trim().toUpperCase();
 
     if (!enteredCode) {
@@ -234,6 +302,15 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
       return;
     }
 
+    if (isSelectedOrEnteredExhausted || currentCouponLimitStatus.isReached) {
+      toast.error(
+        currentCouponLimitStatus.reason === "user"
+          ? "You have already used this coupon."
+          : "This coupon has reached its total usage limit.",
+      );
+      return;
+    }
+
     if (
       (selectedCouponMeta || couponMeta) &&
       isSingleUseCoupon(selectedCouponMeta || couponMeta) &&
@@ -244,11 +321,26 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
       return;
     }
 
+    const metaToValidate =
+      (selectedCouponMeta as CouponOption) || currentMatchingCoupon;
+    if (metaToValidate && metaToValidate.offerType === "BOGO") {
+      const requiredQty =
+        (metaToValidate.buyQuantity || 1) + (metaToValidate.getQuantity || 1);
+      if (cartLength < requiredQty) {
+        toast.error(
+          `"${metaToValidate.code}" requires at least ${requiredQty} items in your cart. You currently have ${cartLength}.`,
+        );
+        return;
+      }
+    }
+
     handleApplyCoupon(
       userId,
       selectedCouponMeta || couponMeta,
       enteredCode,
     );
+    setSearchQuery("");
+    setManualMsg(null);
     setOpenCouponModal(false);
   };
 
@@ -259,6 +351,32 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
     setCouponInput("");
     setSelectedCouponCode(null);
   };
+
+  if (!mounted) {
+    return (
+      <div className="mt-5 font-[family-name:var(--font-montserrat)]">
+        <div className="p-4 border border-gray-100 rounded-lg animate-pulse space-y-4">
+          <div className="h-5 bg-gray-200 rounded w-1/4 mb-3" />
+          <div className="h-10 bg-gray-100 rounded mb-4" />
+          <div className="h-5 bg-gray-200 rounded w-1/3 mb-3" />
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <div className="h-4 bg-gray-200 rounded w-1/3" />
+              <div className="h-4 bg-gray-200 rounded w-1/6" />
+            </div>
+            <div className="flex justify-between">
+              <div className="h-4 bg-gray-200 rounded w-1/4" />
+              <div className="h-4 bg-gray-200 rounded w-1/6" />
+            </div>
+            <div className="border-t border-gray-200 pt-3 flex justify-between">
+              <div className="h-5 bg-gray-200 rounded w-1/3" />
+              <div className="h-5 bg-gray-200 rounded w-1/5" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -276,16 +394,19 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
                 width={20}
                 height={20}
               />
-              <h1 className="text-[15px] text-[#333333] font-semibold mb-1">
-                {couponCode ? (
-                  <span className="text-green-600">{couponCode}</span>
+              <h1
+                className="text-[15px] text-[#333333] font-semibold mb-1"
+                suppressHydrationWarning
+              >
+                {displayCouponCode ? (
+                  <span className="text-green-600">{displayCouponCode}</span>
                 ) : (
                   "Apply Coupons"
                 )}
               </h1>
             </div>
 
-            {couponCode && onRemoveCoupon ? (
+            {displayCouponCode && onRemoveCoupon ? (
               <button onClick={handleRemoveCoupon} className="mr-2">
                 <Image
                   src="/assets/icons/delete.svg"
@@ -312,11 +433,13 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
                 setSelectedCouponMeta(
                   shouldHideCurrentRecoveryCoupon ? null : (couponMeta ?? null),
                 );
+                setSearchQuery("");
+                setManualMsg(null);
                 setOpenCouponModal(true);
               }}
               className="text-[#6a3f07] font-semibold border border-[#6a3f07] rounded px-2.5 py-0.5 text-sm cursor-pointer"
             >
-              {couponCode ? "CHANGE" : "APPLY"}
+              {displayCouponCode ? "CHANGE" : "APPLY"}
             </button>
           </div>
 
@@ -338,12 +461,15 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
             </p>
           )}
 
-          <h3 className="text-[15px] font-bold mb-4 uppercase mt-5">
+          <h3
+            className="text-[15px] font-bold mb-4 uppercase mt-5"
+            suppressHydrationWarning
+          >
             Price Details ({cartLength} {cartLength === 1 ? "Item" : "Items"})
           </h3>
 
-          <div className="space-y-5 text-sm">
-            <div className="flex justify-between font-[family-name:var(--font-montserrat)]">
+          <div className="space-y-5 text-sm" suppressHydrationWarning>
+            <div className="flex justify-between font-[family-name:var(--font-montserrat)]" suppressHydrationWarning>
               <span className="font-medium">Total MRP</span>
               <span className=" font-medium">₹{totalMrp.toFixed(2)}</span>
             </div>
@@ -392,9 +518,12 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
             )}
           </div>
 
-          <div className="flex font-[family-name:var(--font-montserrat)] justify-between font-bold text-lg mt-3 border-t border-gray-200 pt-3">
+          <div
+            className="flex font-[family-name:var(--font-montserrat)] justify-between font-bold text-lg mt-3 border-t border-gray-200 pt-3"
+            suppressHydrationWarning
+          >
             <span>Total Amount</span>
-            <span>₹{totalAmount.toFixed(2)}</span>
+            <span suppressHydrationWarning>₹{totalAmount.toFixed(2)}</span>
           </div>
 
           <p className="text-[12px] font-[family-name:var(--font-montserrat)] font-bold text-gray-500 text-right mt-1">
@@ -449,8 +578,21 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
                   className="text-center p-4"
                   onClick={() => {
                     const val = couponInput.trim().toUpperCase();
-                    const match = visibleCoupons.find((c) => c.code === val);
+                    const match = coupons.find((c) => c.code?.toUpperCase() === val);
                     if (match) {
+                      const limitStatus = isCouponLimitReached(match, currentUserId);
+                      if (limitStatus.isReached) {
+                        setSelectedCouponCode(match.code);
+                        setSelectedCouponMeta(match);
+                        setManualMsg({
+                          type: "error",
+                          text:
+                            limitStatus.reason === "user"
+                              ? `You have already used coupon "${match.code}".`
+                              : `Coupon "${match.code}" has reached its total usage limit.`,
+                        });
+                        return;
+                      }
                       setSelectedCouponCode(match.code);
                       setSelectedCouponMeta(match);
                       setCouponInput(match.code);
@@ -492,71 +634,120 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
             {/* Coupon list */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
               {visibleCoupons.length > 0 ? (
-                visibleCoupons.map((coupon, index) => (
-                  <div
-                    key={`${coupon._id || coupon.id || coupon.code}-${index}`}
-                    className={`border border-dashed p-4 rounded-md cursor-pointer ${
-                      selectedCouponCode === coupon.code
-                        ? "border-[#6a3f07] border-2"
-                        : "border-gray-500"
-                    }`}
-                    onClick={() => {
-                      setSelectedCouponCode(coupon.code);
-                      setCouponInput(coupon.code);
-                      setSelectedCouponMeta(coupon);
-                      setSearchQuery(coupon.code);
-                      setManualMsg(null);
-                    }}
-                  >
-                    <div className="font-bold border border-dashed border-gray-500 text-[#6b5639] mb-2 uppercase text-lg p-2 w-full">
-                      {coupon.code}
-                    </div>
-                    <div className="flex flex-wrap justify-start gap-1 mt-2">
-                      {coupon.offerType === "BOGO" && (
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5">
-                          Buy 1 Get 1
-                        </span>
-                      )}
-                      {coupon.scope === "Category" &&
-                        coupon.applicableIds &&
-                        coupon.applicableIds.length > 0 && (
-                          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5">
-                            {typeof coupon.applicableIds[0] === "object" &&
-                            coupon.applicableIds[0].name
-                              ? coupon.applicableIds[0].name
-                              : "Category Offer"}
+                visibleCoupons.map((coupon, index) => {
+                  const limitStatus = isCouponLimitReached(
+                    coupon,
+                    currentUserId,
+                  );
+                  const isLimitReached = limitStatus.isReached;
+                  const isSelected = selectedCouponCode === coupon.code;
+
+                  return (
+                    <div
+                      key={`${coupon._id || coupon.id || coupon.code}-${index}`}
+                      className={`border border-dashed p-4 rounded-md transition-all ${
+                        isLimitReached
+                          ? "bg-gray-50 border-gray-300 opacity-60 cursor-not-allowed"
+                          : isSelected
+                            ? "border-[#6a3f07] border-2 cursor-pointer bg-[#fffaf3]"
+                            : "border-gray-500 cursor-pointer hover:border-gray-700"
+                      }`}
+                      onClick={() => {
+                        if (isLimitReached) {
+                          toast.error(
+                            limitStatus.reason === "user"
+                              ? "You have already used this coupon the maximum number of times."
+                              : "This coupon has reached its total usage limit.",
+                          );
+                          return;
+                        }
+                        setSelectedCouponCode(coupon.code);
+                        setCouponInput(coupon.code);
+                        setSelectedCouponMeta(coupon);
+                        setManualMsg(null);
+                      }}
+                    >
+                      <div className="flex items-center justify-between font-bold border border-dashed border-gray-500 text-[#6b5639] mb-2 uppercase text-lg p-2 w-full">
+                        <span>{coupon.code}</span>
+                        {isLimitReached && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 normal-case tracking-normal">
+                            {limitStatus.reason === "user"
+                              ? "Already Used"
+                              : "Usage Limit Reached"}
                           </span>
                         )}
-                      {coupon.scope === "Specific_Product" && (
-                        <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5">
-                          Product Offer
-                        </span>
+                      </div>
+
+                      {isLimitReached && (
+                        <p className="text-xs text-red-600 font-medium mb-2">
+                          {limitStatus.reason === "user"
+                            ? "You have already reached the maximum usage limit for this coupon."
+                            : "This coupon has reached its total redemption limit and cannot be applied."}
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap justify-start gap-1 mt-2">
+                        {coupon.offerType === "BOGO" && (
+                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5">
+                            {coupon.buyQuantity && coupon.getQuantity
+                              ? `Buy ${coupon.buyQuantity} Get ${coupon.getQuantity}`
+                              : "Buy 1 Get 1"}
+                          </span>
+                        )}
+                        {coupon.scope === "Category" &&
+                          coupon.applicableIds &&
+                          coupon.applicableIds.length > 0 && (
+                            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5">
+                              {typeof coupon.applicableIds[0] === "object" &&
+                              coupon.applicableIds[0].name
+                                ? coupon.applicableIds[0].name
+                                : "Category Offer"}
+                            </span>
+                          )}
+                        {coupon.scope === "Specific_Product" && (
+                          <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5">
+                            Product Offer
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-sm font-semibold text-gray-800 mt-2">
+                        {coupon.offerType === "Percentage"
+                          ? `Get ${coupon.offerValue}% OFF`
+                          : coupon.offerType === "FixedAmount"
+                            ? `Save ₹${coupon.offerValue}`
+                            : coupon.offerType === "BOGO"
+                              ? (coupon.buyQuantity && coupon.getQuantity
+                                  ? `Buy ${coupon.buyQuantity} Get ${coupon.getQuantity} FREE`
+                                  : "Buy 1 Get 1 FREE")
+                              : `${coupon.offerType} Offer`}
+                      </div>
+
+                      {coupon.description && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          {coupon.description}
+                        </div>
+                      )}
+
+                      {coupon.offerType === "BOGO" && (
+                        <div className="text-xs text-gray-500 mt-1.5">
+                          Requires at least {(coupon.buyQuantity || 1) + (coupon.getQuantity || 1)} items in cart
+                          {cartLength < ((coupon.buyQuantity || 1) + (coupon.getQuantity || 1)) && (
+                            <span className="text-amber-600 block mt-0.5 font-medium">
+                              (Add {((coupon.buyQuantity || 1) + (coupon.getQuantity || 1)) - cartLength} more item{((coupon.buyQuantity || 1) + (coupon.getQuantity || 1)) - cartLength > 1 ? "s" : ""} to qualify)
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {(coupon.minPurchase || coupon.minOrderAmount) && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Min. purchase: ₹{coupon.minPurchase || coupon.minOrderAmount}
+                        </div>
                       )}
                     </div>
-
-                    <div className="text-sm font-semibold text-gray-800 mt-2">
-                      {coupon.offerType === "Percentage"
-                        ? `Get ${coupon.offerValue}% OFF`
-                        : coupon.offerType === "FixedAmount"
-                          ? `Save ₹${coupon.offerValue}`
-                          : coupon.offerType === "BOGO"
-                            ? coupon.description
-                            : `${coupon.offerType} Offer`}
-                    </div>
-
-                    {coupon.description && coupon.offerType !== "BOGO" && (
-                      <div className="text-xs text-gray-600">
-                        {coupon.description}
-                      </div>
-                    )}
-
-                    {coupon.minPurchase && (
-                      <div className="text-xs text-gray-500">
-                        Min. purchase: ₹{coupon.minPurchase}
-                      </div>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="flex flex-col items-center justify-center h-full">
                   <p className="text-center text-gray-500 mb-2">
@@ -573,7 +764,7 @@ const PriceDetails: React.FC<PriceDetailsProps> = ({
             <div className="border-t border-gray-200">
               <button
                 onClick={applyCouponAndClose}
-                disabled={!couponInput.trim()}
+                disabled={!couponInput.trim() || isSelectedOrEnteredExhausted}
                 className="w-full bg-[#ff9900] cursor-pointer text-white py-3 font-bold uppercase transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-[#e68a00]"
               >
                 Apply Coupon

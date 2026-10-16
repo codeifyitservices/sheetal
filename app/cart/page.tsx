@@ -8,7 +8,7 @@ import { useCart, CartItem } from "../hooks/useCart";
 import CartItemsList from "./components/CartItemsList";
 import PriceDetails from "./components/PriceDetails";
 import { getSettings } from "../services/settingsService";
-import { isAuthenticated } from "../services/authService";
+import { isAuthenticated, getUserDetails } from "../services/authService";
 import { peekRedirectField, redirectToLogin } from "../utils/authRedirect";
 import { createSharedCart } from "../services/cartService";
 import { useSettings } from "../hooks/useSettings";
@@ -198,7 +198,13 @@ const CartPage = () => {
     userId: string | undefined,
     couponMeta?: unknown,
   ) => {
-    if (!userId && !isAuthenticated()) {
+    let resolvedUserId = userId;
+    if (!resolvedUserId) {
+      const currentUser = getUserDetails();
+      resolvedUserId = currentUser?.id || (currentUser as any)?._id;
+    }
+
+    if (!resolvedUserId && !isAuthenticated()) {
       toast.error("Please login to apply coupons.");
       return;
     }
@@ -208,12 +214,12 @@ const CartPage = () => {
       return;
     }
 
-    if (!userId) {
+    if (!resolvedUserId) {
       toast.error("User session issue. Please try logging in again if this persists.");
       return;
     }
 
-    applyCoupon(couponInput.trim().toUpperCase(), userId, couponMeta || undefined);
+    applyCoupon(couponInput.trim().toUpperCase(), resolvedUserId, couponMeta || undefined);
   };
 
   const handleShareCart = async (): Promise<string | null> => {

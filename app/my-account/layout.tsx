@@ -1,6 +1,8 @@
 import Footer from "../components/Footer";
 import MyAccountLayoutClient from "./MyAccountLayoutClient";
 
+export const dynamic = "force-dynamic";
+
 const MyAccountLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
@@ -11,3 +13,4 @@ const MyAccountLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default MyAccountLayout;
+

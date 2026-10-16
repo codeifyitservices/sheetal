@@ -79,3 +79,33 @@ export const getMyOrders = async (
 export const getOrderById = async (orderId: string) => {
   return apiFetch(`/orders/${orderId}`, { method: "GET" });
 };
+
+/**
+ * Cancels an order belonging to the currently authenticated user.
+ * @param orderId - MongoDB _id of the order
+ * @param reason  - Optional cancellation reason
+ */
+export const cancelOrder = async (orderId: string, reason?: string) => {
+  return apiFetch(`/orders/${orderId}/cancel`, {
+    method: "PUT",
+    body: JSON.stringify({ reason }),
+  });
+};
+
+/**
+ * Submits a return or exchange request for an item in a delivered order.
+ * @param params - { orderId, productId, type, reason, details }
+ */
+export const requestOrderReturn = async (params: {
+  orderId: string;
+  productId?: string | null;
+  type?: "Return" | "Exchange";
+  reason: string;
+  details?: string;
+}) => {
+  return apiFetch("/returns/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+};

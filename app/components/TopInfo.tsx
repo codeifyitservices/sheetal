@@ -19,7 +19,11 @@ const getOfferText = (homepageCoupon: HomepageCoupon) => {
   if (homepageCoupon.offerType === "FixedAmount") {
     return `Flat Rs.${homepageCoupon.offerValue} Off`;
   }
-  if (homepageCoupon.offerType === "BOGO") return "Buy One Get One Free";
+  if (homepageCoupon.offerType === "BOGO") {
+    return homepageCoupon.buyQuantity && homepageCoupon.getQuantity
+      ? `Buy ${homepageCoupon.buyQuantity} Get ${homepageCoupon.getQuantity} Free`
+      : "Buy One Get One Free";
+  }
   return "";
 };
 
@@ -68,11 +72,9 @@ async function getTopInfoData() {
     } catch {
       return { homepageSettings, coupon: null };
     }
-  } catch {
-    return {
-      homepageSettings: defaultHomepageSettings,
-      coupon: null,
-    };
+  } catch (error) {
+    console.warn("TopInfo: Failed to fetch homepage settings, hiding TopInfo bar.", error);
+    return null;
   }
 }
 

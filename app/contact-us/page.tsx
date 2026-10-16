@@ -17,6 +17,13 @@ const ContactUs = async () => {
   const settings = await getSettings();
   const supportEmail = settings?.supportEmail || "info@studiobysheetal.com";
   const supportWhatsapp = settings?.supportWhatsapp || "919958813913";
+  const contactSubtitle =
+    settings?.contactSubtitle ||
+    "Please contact us with any questions or concerns.";
+  const contactWriteUsTitle = settings?.contactWriteUsTitle || "Write to us:";
+  const contactWriteUsSubtitle =
+    settings?.contactWriteUsSubtitle ||
+    "Thank you for visiting us. We'd love to hear from you. Please fill in the details below. Our team member will contact you shortly.";
   const displayPhone = supportWhatsapp.startsWith("91") && supportWhatsapp.length === 12
     ? `+91 ${supportWhatsapp.slice(2, 7)} ${supportWhatsapp.slice(7)}`
     : supportWhatsapp;
@@ -67,7 +74,7 @@ const ContactUs = async () => {
                         </h2>
                       </div>
                       <h5 className="font-[family-name:var(--font-montserrat)] text-[18px] tracking-wider text-[#252525] font-extralight">
-                        Please contact us with any questions or concerns.
+                        {contactSubtitle}
                       </h5>
                     </div>
 
@@ -106,12 +113,10 @@ const ContactUs = async () => {
 
                       <div className="w-full text-center mt-12 px-4">
                         <h2 className="font-optima text-[#6a3f07] relative inline-block mb-4 before:hidden after:hidden md:before:block md:after:block md:before:content-[''] md:before:w-[60px] md:before:h-[2px] md:before:bg-[#a2690f] md:before:absolute md:before:-left-[85px] md:before:top-1/2 md:after:content-[''] md:after:w-[60px] md:after:h-[2px] md:after:bg-[#a2690f] md:after:absolute md:after:-right-[85px] md:after:top-1/2">
-                          Write to us:
+                          {contactWriteUsTitle}
                         </h2>
                         <p className="font-[family-name:var(--font-montserrat)] text-black mb-4">
-                          Thank you for visiting us. We&apos;d love to hear from you.
-                          Please fill in the details below. Our team member will
-                          contact you shortly.
+                          {contactWriteUsSubtitle}
                         </p>
                         <p>&nbsp;</p>
 

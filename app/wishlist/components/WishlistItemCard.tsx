@@ -79,22 +79,30 @@ const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
           </Link>
         </h6>
         <div className="flex items-baseline gap-2 mb-4 font-medium">
-          <span className="text-[16px] text-[#281b00]">
-            &#8377; {product.lowestPrice.toLocaleString()}
-          </span>
-          {product.discountPercent > 0 && (
+          {product.lowestPrice > 0 ? (
             <>
-              <span className="text-[14px] text-gray-500 line-through">
-                &#8377; {product.lowestMrp.toLocaleString()}
+              <span className="text-[16px] text-[#281b00]">
+                &#8377; {product.lowestPrice.toLocaleString()}
               </span>
-              <span className="text-[16px] text-[#70480c]">
-                {product.discountPercent}% OFF
-              </span>
+              {product.discountPercent > 0 && (
+                <>
+                  <span className="text-[14px] text-gray-500 line-through">
+                    &#8377; {product.lowestMrp.toLocaleString()}
+                  </span>
+                  <span className="text-[16px] text-[#70480c]">
+                    {product.discountPercent}% OFF
+                  </span>
+                </>
+              )}
             </>
+          ) : (
+            <span className="text-[15px] font-medium text-[#70480c]">
+              Price on Request
+            </span>
           )}
         </div>
         <div className="mt-auto">
-          {product.stock > 0 ? (
+          {product.stock > 0 && product.lowestPrice > 0 ? (
             <button
               disabled={isMovingToCart}
               onClick={() => onMoveToCart(product)}

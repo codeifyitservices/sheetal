@@ -81,17 +81,18 @@ export const getLoginCoupon = async (): Promise<CouponResponse> => {
 export const getValidAbandonedCartCoupon = async (
   token?: string,
 ): Promise<CouponResponse> => {
+  if (!token) {
+    return { success: false, data: null };
+  }
   try {
-    const headers = token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : undefined;
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
     const response = await axios.get(`${ABANDONED_CART_API_URL}/coupon`, {
       headers,
     });
     return response.data;
   } catch (error) {
-    throw error;
+    return { success: false, data: null };
   }
 };

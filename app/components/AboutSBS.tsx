@@ -43,11 +43,12 @@ const AboutSBS = ({ content }: { content?: AboutSBSContent }) => {
                   className="max-w-[95%] h-auto"
                 />
                 <Image
-                  src="/assets/roud-img.png"
+                  src="/assets/roud-img.png?v=2"
                   className="absolute -bottom-5 -right-0 md:bottom-9 md:-right-[60px] animate-[circle_6s_linear_infinite] w-[100px] h-[100px] md:w-[150px] md:h-[150px]"
                   alt="Decoration"
                   width={150}
                   height={150}
+                  unoptimized
                 />
               </div>
             </div>

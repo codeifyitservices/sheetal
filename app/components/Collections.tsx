@@ -180,6 +180,40 @@ const Collections = ({ content }: { content?: CollectionsContent }) => {
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
+  const isAvailableProduct = (p: Product): boolean => {
+    if (!p || !p._id || !p.slug || !p.name) return false;
+    if (p.status && p.status !== "Active") return false;
+
+    const hasVariantSizes = p.variants?.some(
+      (v: any) => Array.isArray(v.sizes) && v.sizes.length > 0,
+    );
+    const hasInStockVariant = p.variants?.some((v: any) =>
+      v.sizes?.some((s: any) => Number(s.stock || 0) > 0),
+    );
+    const isInStock = hasVariantSizes
+      ? Boolean(hasInStockVariant) && (p.stock === undefined || p.stock > 0)
+      : Number(p.stock || 0) > 0;
+
+    if (!isInStock) return false;
+
+    let minPrice = Infinity;
+    p.variants?.forEach((v: any) => {
+      v.sizes?.forEach((s: any) => {
+        const effective =
+          s.discountPrice && s.discountPrice > 0 ? s.discountPrice : s.price;
+        if (effective > 0 && effective < minPrice) {
+          minPrice = effective;
+        }
+      });
+    });
+
+    if (minPrice === Infinity && Number(p.price || 0) > 0) {
+      minPrice = Number(p.price);
+    }
+
+    return minPrice > 0 && minPrice !== Infinity;
+  };
+
   const formatProduct = (p: Product): CollectionProduct => {
     let minPrice = Infinity;
     let relatedMrp = 0;
@@ -188,7 +222,7 @@ const Collections = ({ content }: { content?: CollectionsContent }) => {
       v.sizes?.forEach((s: any) => {
         const effective =
           s.discountPrice && s.discountPrice > 0 ? s.discountPrice : s.price;
-        if (effective < minPrice) {
+        if (effective > 0 && effective < minPrice) {
           minPrice = effective;
           relatedMrp = s.price;
         }
@@ -205,11 +239,15 @@ const Collections = ({ content }: { content?: CollectionsContent }) => {
         ? `${Math.round(((relatedMrp - minPrice) / relatedMrp) * 100)}% OFF`
         : "";
 
-    const validVariants = p.variants?.filter((v: any) =>
-      v.sizes?.some((s: any) => s.stock > 0),
+    const hasVariantSizes = p.variants?.some(
+      (v: any) => Array.isArray(v.sizes) && v.sizes.length > 0,
     );
-    const isSoldOut =
-      !validVariants || validVariants.length === 0 || p.stock <= 0;
+    const validVariants = p.variants?.filter((v: any) =>
+      v.sizes?.some((s: any) => Number(s.stock || 0) > 0),
+    );
+    const isSoldOut = hasVariantSizes
+      ? !validVariants || validVariants.length === 0 || (p.stock !== undefined && p.stock <= 0)
+      : (p.stock || 0) <= 0;
 
     return {
       id: p.slug,
@@ -218,8 +256,8 @@ const Collections = ({ content }: { content?: CollectionsContent }) => {
       name: p.name,
       image: getProductImageUrl(p),
       hoverImage: getProductHoverImageUrl(p, getProductImageUrl(p)),
-      price: `₹ ${minPrice.toFixed(2)}`,
-      mrp: `₹ ${relatedMrp.toFixed(2)}`,
+      price: minPrice > 0 ? `₹ ${minPrice.toFixed(2)}` : "Price on Request",
+      mrp: minPrice > 0 && relatedMrp > 0 ? `₹ ${relatedMrp.toFixed(2)}` : "",
       discount: discountStr,
       soldOut: isSoldOut,
       rating: p.averageRating || 0,
@@ -239,7 +277,8 @@ const Collections = ({ content }: { content?: CollectionsContent }) => {
 
   useEffect(() => {
     if (propProducts && propProducts.length > 0) {
-      setProducts(propProducts.map(formatProduct));
+      const available = propProducts.filter(isAvailableProduct);
+      setProducts(available.map(formatProduct));
       setLoading(false);
     } else {
       setLoading(false);

@@ -260,7 +260,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
         v.sizes?.forEach((s: any) => {
           const effective =
             s.discountPrice && s.discountPrice > 0 ? s.discountPrice : s.price;
-          if (effective < minPrice) {
+          if (effective > 0 && effective < minPrice) {
             minPrice = effective;
             relatedMrp = s.price;
           }

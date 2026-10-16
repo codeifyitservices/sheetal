@@ -8,14 +8,10 @@ export const metadata: Metadata = {
   keywords: "saree collection, designer ethnic wear, luxury sarees, bridal collection, Studio By Sheetal products",
 };
 
-interface ProductListPageProps {
-  categorySlug?: string;
-}
-
-const ProductListPage = ({ categorySlug }: ProductListPageProps) => {
+const ProductListPage = () => {
   return (
     <>
-      <ProductListClient categorySlug={categorySlug} />
+      <ProductListClient />
       <Footer />
     </>
   );

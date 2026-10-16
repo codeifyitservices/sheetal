@@ -53,6 +53,7 @@ export const isSingleUseCoupon = (meta?: unknown) => {
     readLimit(record.maxRedemptionsPerCustomer),
     readLimit(record.usageLimitPerCustomer),
     readLimit(record.userUsageLimit),
+    readLimit(record.usageLimitPerUser),
   ].filter((value): value is number => value !== null);
 
   return perCustomerLimits.some((limit) => limit === 1);
@@ -74,4 +75,56 @@ export const markCouponRedeemed = (userId: string, code: string) => {
   redeemed.add(normalizeCode(code));
   store[userId] = Array.from(redeemed);
   writeStore(store);
+};
+
+export const isCouponLimitReached = (
+  coupon: any,
+  userId?: string | null,
+): { isReached: boolean; reason?: "total" | "user" } => {
+  if (!coupon || typeof coupon !== "object") {
+    return { isReached: false };
+  }
+
+  // 1. Total usage limit crossed
+  const totalUsageLimit = Number(coupon.totalUsageLimit);
+  const usedCount = Number(coupon.usedCount ?? 0);
+  if (
+    Number.isFinite(totalUsageLimit) &&
+    totalUsageLimit > 0 &&
+    usedCount >= totalUsageLimit
+  ) {
+    return { isReached: true, reason: "total" };
+  }
+
+  // 2. User usage limit crossed (if logged in)
+  if (userId) {
+    const userLimit = Number(coupon.usageLimitPerUser ?? 1);
+    const normalizedUserId = String(userId).trim();
+
+    // Check database usedBy array
+    if (Array.isArray(coupon.usedBy)) {
+      const userUsage = coupon.usedBy.find((entry: any) => {
+        const entryUserId =
+          typeof entry?.userId === "object" && entry?.userId !== null
+            ? String(entry.userId._id || "")
+            : String(entry?.userId || entry?.user || "");
+        return entryUserId === normalizedUserId;
+      });
+
+      if (userUsage && Number(userUsage.count || 0) >= userLimit) {
+        return { isReached: true, reason: "user" };
+      }
+    }
+
+    // Check client-side single use redemption cache
+    if (
+      coupon.code &&
+      isSingleUseCoupon(coupon) &&
+      hasRedeemedCoupon(normalizedUserId, coupon.code)
+    ) {
+      return { isReached: true, reason: "user" };
+    }
+  }
+
+  return { isReached: false };
 };

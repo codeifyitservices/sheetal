@@ -17,7 +17,7 @@ const BlogContent: React.FC<BlogContentProps> = ({ blog }) => {
       </h3>
       <div className="text-[15px] font-[family-name:var(--font-montserrat)] text-gray-500 mb-6 flex items-center gap-2">
         <span className="">
-          {blog.author?.name || "Admin"}
+          {blog.authorName || blog.author?.name || "Admin"}
         </span>
         <span>|</span>
         <span>

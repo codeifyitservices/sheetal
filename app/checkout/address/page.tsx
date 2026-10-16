@@ -171,39 +171,56 @@ const AddressPageInner = () => {
         })()
       : null;
 
-  const buyNowItem = (() => {
+  const hasBuyNowParam = Boolean(searchParams.get("buynow"));
+  const [mounted, setMounted] = useState(false);
+  const [buyNowItem, setBuyNowItem] = useState<any>(() => {
     const param = searchParams.get("buynow");
-    if (param) {
+    if (param && param !== "1" && param !== "true") {
       try {
-        return JSON.parse(decodeURIComponent(param));
+        const parsed = JSON.parse(decodeURIComponent(param));
+        if (parsed && typeof parsed === "object") {
+          return parsed;
+        }
       } catch {
         // Fall back to sessionStorage if query param parsing fails
       }
     }
-    if (typeof window !== "undefined") {
-      const buyNowStr = sessionStorage.getItem("buy_now_item");
-      if (buyNowStr) {
-        try {
-          return JSON.parse(buyNowStr);
-        } catch {
-          return null;
+    return null;
+  });
+
+  useEffect(() => {
+    setMounted(true);
+    const param = searchParams.get("buynow");
+    if (param) {
+      try {
+        const buyNowStr = sessionStorage.getItem("buy_now_item");
+        if (buyNowStr) {
+          const parsed = JSON.parse(buyNowStr);
+          if (parsed && typeof parsed === "object") {
+            setBuyNowItem(parsed);
+          }
         }
+      } catch (e) {
+        console.error("Failed to read buy_now_item from sessionStorage:", e);
       }
     }
-    return null;
-  })();
+  }, [searchParams]);
 
   const normalizeQuantity = (value: unknown) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? Math.max(1, Math.floor(parsed)) : 1;
   };
 
-  const isBuyNow = !!buyNowItem;
-  const activeItems = isBuyNow
+  const isBuyNow = !!buyNowItem || (hasBuyNowParam && !mounted);
+  const isSummaryLoading =
+    !mounted || (!isBuyNow && loading) || (hasBuyNowParam && !buyNowItem);
+  const activeItems = buyNowItem
     ? [buyNowItem]
-    : cart.length > 0
-      ? cart
-      : cartSnapshot;
+    : hasBuyNowParam
+      ? []
+      : cart.length > 0
+        ? cart
+        : cartSnapshot;
   const normalizedActiveItems = activeItems.map((item) => ({
     ...item,
     quantity: normalizeQuantity(item.quantity),
@@ -463,18 +480,24 @@ const AddressPageInner = () => {
     couponMeta?: unknown,
     overrideCode?: string,
   ) => {
-    if (!userId && !isAuthenticated()) {
+    let resolvedUserId = userId;
+    if (!resolvedUserId) {
+      const currentUser = getUserDetails();
+      resolvedUserId = currentUser?.id || (currentUser as any)?._id;
+    }
+
+    if (!resolvedUserId && !isAuthenticated()) {
       toast.error("Please login to apply coupons.");
       return;
     }
 
-    if (!userId) {
+    if (!resolvedUserId) {
       toast.error("User session issue. Please try logging in again if this persists.");
       return;
     }
 
     if (isBuyNow) {
-      void applyBuyNowCoupon(userId, couponMeta, overrideCode);
+      void applyBuyNowCoupon(resolvedUserId, couponMeta, overrideCode);
       return;
     }
 
@@ -490,7 +513,7 @@ const AddressPageInner = () => {
       return;
     }
 
-    applyCoupon(normalizedCode, userId, couponMeta || undefined);
+    applyCoupon(normalizedCode, resolvedUserId, couponMeta || undefined);
   };
 
   useEffect(() => {
@@ -663,23 +686,28 @@ const AddressPageInner = () => {
           toast.error(response.message || "Failed to create payment link");
         }
       } else {
-        const orderItems = normalizedActiveItems.map((item) => ({
-          product: item.product._id,
-          variantId: item.variantId,
-          name: item.product.name,
-          image: item.product.mainImage?.url || item.variantImage || "",
-          price: item.discountPrice || item.price,
-          quantity: item.quantity,
-          gstPercent: item.product?.gstPercent || 0,
-          variant: {
-            size: item.size,
-            color: item.color,
-            v_sku:
-              ("variantSku" in item && typeof item.variantSku === "string"
-                ? item.variantSku
-                : item.product?.sku) || "",
-          },
-        }));
+        const orderItems = normalizedActiveItems.map((item) => {
+          const resolvedVariantId =
+            item.variantId || (item as { variant?: { _id?: string } }).variant?._id;
+          return {
+            product: item.product._id,
+            variantId: resolvedVariantId,
+            name: item.product.name,
+            image: item.product.mainImage?.url || item.variantImage || "",
+            price: item.discountPrice || item.price,
+            quantity: item.quantity,
+            gstPercent: item.product?.gstPercent || 0,
+            variant: {
+              _id: resolvedVariantId,
+              size: item.size,
+              color: item.color,
+              v_sku:
+                ("variantSku" in item && typeof item.variantSku === "string"
+                  ? item.variantSku
+                  : "") || "",
+            },
+          };
+        });
 
         // When continuing without coupon (bypassCouponRestriction=true), React state
         // hasn't re-rendered yet after clearAppliedCoupon(), so effectiveCouponDiscount
@@ -919,8 +947,11 @@ const AddressPageInner = () => {
           </div>
 
           {/* RIGHT COLUMN: SUMMARY */}
-          <div className="w-full lg:w-[42%] lg:sticky lg:top-6">
-            <MiniCartSummary cartItems={normalizedActiveItems} />
+          <div className="w-full lg:w-[42%] lg:sticky lg:top-6" suppressHydrationWarning>
+            <MiniCartSummary
+              cartItems={normalizedActiveItems}
+              loading={isSummaryLoading}
+            />
 
             <PriceDetails
               couponInput={couponInput}

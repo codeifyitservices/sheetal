@@ -42,6 +42,7 @@ import { buildProductReviewsHref } from "../../utils/productRoutes";
 import toast from "react-hot-toast";
 import useSWR from "swr";
 import { getSettings } from "../../services/settingsService";
+import { canonicalizeSizeName } from "../../utils/sizeUtils";
 
 const getStockLimitMessage = (count: number) =>
   `This item only has ${count} left.`;
@@ -164,6 +165,10 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
     selectedSizeRef.current = selectedSize;
   }, [selectedSize]);
 
+  useEffect(() => {
+    router.prefetch("/checkout/address");
+  }, [router]);
+
   const loadProduct = useCallback(async () => {
     setLoading(true);
     try {
@@ -203,14 +208,16 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
           setSelectedImage(refreshedGallery[0] || getProductImageUrl(res.data));
 
           if (matchedSize) {
-            setSelectedSize(matchedSize.name);
+            setSelectedSize(canonicalizeSizeName(matchedSize.name));
             setSelectedSizeObject(matchedSize);
           } else {
             const nextAvailableSize =
               matchedVariant.sizes.find(
                 (s: ProductVariant["sizes"][number]) => s.stock > 0,
               ) || null;
-            setSelectedSize(nextAvailableSize?.name || "");
+            setSelectedSize(
+              nextAvailableSize ? canonicalizeSizeName(nextAvailableSize.name) : "",
+            );
             setSelectedSizeObject(nextAvailableSize);
           }
         } else {
@@ -240,7 +247,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
               }) => s.stock > 0,
             );
             if (firstAvailableSize) {
-              setSelectedSize(firstAvailableSize.name);
+              setSelectedSize(canonicalizeSizeName(firstAvailableSize.name));
               setSelectedSizeObject(firstAvailableSize);
             }
           } else {
@@ -318,115 +325,121 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
         }
 
         const seen = new Set<string>([selfId]);
-        const allFetched: Product[] = [];
+        const adminPicksInOrder: Product[] = [];
 
-        // 1. Admin picks go first in their exact saved order
+        // 1. Admin picks go first in their exact saved order, deduplicated
         for (const p of adminPicked) {
           if (!seen.has(p._id)) {
             seen.add(p._id);
-            allFetched.push(p);
+            adminPicksInOrder.push(p);
           }
         }
 
-        // 2. Dynamic fallback — no price cap; score by attributes + price proximity
-        const [tier1Res, tier2Res] = await Promise.allSettled([
-          // Tier 1: same category + same fabric (if available)
-          categoryId && productFabrics.length > 0
-            ? fetchProducts({
-                category: categoryId,
-                fabric: productFabrics[0],
-                limit: 80,
-                status: "Active",
-              })
-            : Promise.resolve(null),
-          // Tier 2: same category only (broader net)
-          categoryId
-            ? fetchProducts({
-                category: categoryId,
-                limit: 80,
-                status: "Active",
-              })
-            : Promise.resolve(null),
-        ]);
+        // If the admin has explicitly chosen similar products, display ONLY those products!
+        if (adminPicksInOrder.length > 0) {
+          setSimilarProducts(adminPicksInOrder);
+        } else {
+          // 2. Dynamic fallback — ONLY when admin has NOT configured any similar products
+          const [tier1Res, tier2Res] = await Promise.allSettled([
+            // Tier 1: same category + same fabric (if available)
+            categoryId && productFabrics.length > 0
+              ? fetchProducts({
+                  category: categoryId,
+                  fabric: productFabrics[0],
+                  limit: 80,
+                  status: "Active",
+                })
+              : Promise.resolve(null),
+            // Tier 2: same category only (broader net)
+            categoryId
+              ? fetchProducts({
+                  category: categoryId,
+                  limit: 80,
+                  status: "Active",
+                })
+              : Promise.resolve(null),
+          ]);
 
-        // Attribute sets from the current product (lower-cased for comparison)
-        const toSet = (arr: string[] | undefined) =>
-          new Set((arr ?? []).map((v) => v.trim().toLowerCase()));
+          // Attribute sets from the current product (lower-cased for comparison)
+          const toSet = (arr: string[] | undefined) =>
+            new Set((arr ?? []).map((v) => v.trim().toLowerCase()));
 
-        const selfFabrics   = toSet(res.data.fabric);
-        const selfWearType  = toSet(res.data.wearType);
-        const selfOccasion  = toSet(res.data.occasion);
-        const selfTags      = toSet(res.data.tags);
-        const selfStyle     = toSet(res.data.style);
-        const selfWork      = toSet(res.data.work);
+          const selfFabrics   = toSet(res.data.fabric);
+          const selfWearType  = toSet(res.data.wearType);
+          const selfOccasion  = toSet(res.data.occasion);
+          const selfTags      = toSet(res.data.tags);
+          const selfStyle     = toSet(res.data.style);
+          const selfWork      = toSet(res.data.work);
 
-        // Helper: count overlapping values between two sets
-        const overlap = (selfSet: Set<string>, otherArr: string[] | undefined) =>
-          (otherArr ?? []).filter((v) => selfSet.has(v.trim().toLowerCase())).length;
+          // Helper: count overlapping values between two sets
+          const overlap = (selfSet: Set<string>, otherArr: string[] | undefined) =>
+            (otherArr ?? []).filter((v) => selfSet.has(v.trim().toLowerCase())).length;
 
-        // Helper: get the minimum effective price of a product
-        const getMinPrice = (p: Product): number => {
-          let min = 0;
-          p.variants?.forEach((v) => {
-            v.sizes?.forEach((s) => {
-              const ep = getEffectivePrice(s);
-              if (ep > 0 && (min === 0 || ep < min)) min = ep;
+          // Helper: get the minimum effective price of a product
+          const getMinPrice = (p: Product): number => {
+            let min = 0;
+            p.variants?.forEach((v) => {
+              v.sizes?.forEach((s) => {
+                const ep = getEffectivePrice(s);
+                if (ep > 0 && (min === 0 || ep < min)) min = ep;
+              });
             });
-          });
-          return min;
-        };
+            return min;
+          };
 
-        // Score a candidate product:
-        //  - +2 per attribute field that has at least one matching value  (max +12)
-        //  - price proximity: 0–15, dominant signal — exact match = 15, ₹5 000 away = 0
-        //    Attributes only act as tiebreakers when prices are very close.
-        const scoreProduct = (p: Product): number => {
-          let score = 0;
+          // Score a candidate product:
+          //  - +2 per attribute field that has at least one matching value  (max +12)
+          //  - price proximity: 0–15, dominant signal — exact match = 15, ₹5 000 away = 0
+          //    Attributes only act as tiebreakers when prices are very close.
+          const scoreProduct = (p: Product): number => {
+            let score = 0;
 
-          if (overlap(selfFabrics,  p.fabric)    > 0) score += 2;
-          if (overlap(selfWearType, p.wearType)  > 0) score += 2;
-          if (overlap(selfOccasion, p.occasion)  > 0) score += 2;
-          if (overlap(selfTags,     p.tags)      > 0) score += 2;
-          if (overlap(selfStyle,    p.style)     > 0) score += 2;
-          if (overlap(selfWork,     p.work)      > 0) score += 2;
+            if (overlap(selfFabrics,  p.fabric)    > 0) score += 2;
+            if (overlap(selfWearType, p.wearType)  > 0) score += 2;
+            if (overlap(selfOccasion, p.occasion)  > 0) score += 2;
+            if (overlap(selfTags,     p.tags)      > 0) score += 2;
+            if (overlap(selfStyle,    p.style)     > 0) score += 2;
+            if (overlap(selfWork,     p.work)      > 0) score += 2;
 
-          // Price proximity bonus — 0 to 15, scaled over a ₹5 000 reference band
-          if (currentMinPrice > 0) {
-            const pPrice = getMinPrice(p);
-            if (pPrice > 0) {
-              const delta = Math.abs(pPrice - currentMinPrice);
-              score += Math.max(0, 15 - (delta / 5_000) * 15);
+            // Price proximity bonus — 0 to 15, scaled over a ₹5 000 reference band
+            if (currentMinPrice > 0) {
+              const pPrice = getMinPrice(p);
+              if (pPrice > 0) {
+                const delta = Math.abs(pPrice - currentMinPrice);
+                score += Math.max(0, 15 - (delta / 5_000) * 15);
+              }
             }
-          }
 
-          return score;
-        };
+            return score;
+          };
 
-        // Collect raw candidates from both tiers (deduplicated)
-        const rawCandidates = new Map<string, Product>();
-        for (const result of [tier1Res, tier2Res]) {
-          if (result.status === "fulfilled" && result.value?.success) {
-            for (const p of result.value.products ?? []) {
-              if (!seen.has(p._id) && !rawCandidates.has(p._id)) {
-                rawCandidates.set(p._id, p);
+          // Collect raw candidates from both tiers (deduplicated)
+          const rawCandidates = new Map<string, Product>();
+          for (const result of [tier1Res, tier2Res]) {
+            if (result.status === "fulfilled" && result.value?.success) {
+              for (const p of result.value.products ?? []) {
+                if (!seen.has(p._id) && !rawCandidates.has(p._id)) {
+                  rawCandidates.set(p._id, p);
+                }
               }
             }
           }
-        }
 
-        // Score and sort
-        const sorted = [...rawCandidates.values()].sort(
-          (a, b) => scoreProduct(b) - scoreProduct(a),
-        );
+          // Score and sort
+          const sorted = [...rawCandidates.values()].sort(
+            (a, b) => scoreProduct(b) - scoreProduct(a),
+          );
 
-        for (const p of sorted) {
-          if (!seen.has(p._id)) {
-            seen.add(p._id);
-            allFetched.push(p);
+          const fallbackProducts: Product[] = [];
+          for (const p of sorted) {
+            if (!seen.has(p._id)) {
+              seen.add(p._id);
+              fallbackProducts.push(p);
+            }
           }
-        }
 
-        setSimilarProducts(allFetched);
+          setSimilarProducts(fallbackProducts);
+        }
 
         // ── Recently viewed ────────────────────────────────────────────
         try {
@@ -559,6 +572,11 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       toast.error(getStockLimitMessage(selectedSizeInfo.stock));
       return;
     }
+    const effectivePrice = getEffectivePrice(selectedSizeInfo);
+    if (effectivePrice <= 0) {
+      toast.error("Product price is not available. Please enquire.");
+      return;
+    }
     const variantImageUrl = getApiImageUrl(
       selectedVariant.v_image,
       product.mainImage?.url || "/assets/placeholder-product.jpg",
@@ -612,6 +630,11 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       toast.error(getStockLimitMessage(selectedSizeInfo.stock));
       return;
     }
+    const effectivePrice = getEffectivePrice(selectedSizeInfo);
+    if (effectivePrice <= 0) {
+      toast.error("Product price is not available. Please enquire.");
+      return;
+    }
     const variantImageUrl = getApiImageUrl(
       selectedVariant.v_image,
       product.mainImage?.url || "/assets/placeholder-product.jpg",
@@ -621,9 +644,17 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       product: {
         _id: product._id,
         name: product.name,
+        slug: product.slug || slug,
+        categorySlug: product.category?.slug,
         mainImage: product.mainImage,
         sku: product.sku,
-        category: product.category,
+        category: product.category
+          ? {
+              _id: product.category._id,
+              name: product.category.name,
+              slug: product.category.slug,
+            }
+          : undefined,
       },
       variantId: selectedVariant._id,
       variantSku: selectedVariant.v_sku || product.sku,
@@ -640,8 +671,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       sessionStorage.setItem("buy_now_item", JSON.stringify(buyNowItem));
     }
 
-    const encoded = encodeURIComponent(JSON.stringify(buyNowItem));
-    const checkoutUrl = `/checkout/address?buynow=${encoded}`;
+    const checkoutUrl = `/checkout/address?buynow=1`;
     if (!isAuthenticated()) {
       redirectToLogin(router, checkoutUrl);
       return;
@@ -705,12 +735,13 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
     if (Array.isArray(v.sizes)) {
       v.sizes?.forEach((s: { name: string; stock: number }) => {
         if (s?.name) {
-          allUniqueSizeNames.add(s.name);
-          const currentStock = sizeOverallStockMap.get(s.name) || {
+          const canonicalName = canonicalizeSizeName(s.name);
+          allUniqueSizeNames.add(canonicalName);
+          const currentStock = sizeOverallStockMap.get(canonicalName) || {
             totalStock: 0,
           };
           currentStock.totalStock += s.stock || 0;
-          sizeOverallStockMap.set(s.name, currentStock);
+          sizeOverallStockMap.set(canonicalName, currentStock);
           if (
             v.color &&
             typeof v.color === "object" &&
@@ -719,7 +750,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
             if (!colorToAvailableSizesMap.has(v.color.name)) {
               colorToAvailableSizesMap.set(v.color.name, new Set<string>());
             }
-            colorToAvailableSizesMap.get(v.color.name)?.add(s.name);
+            colorToAvailableSizesMap.get(v.color.name)?.add(canonicalName);
           }
         }
       });
@@ -746,10 +777,11 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
     setSelectedImage(nextGallery[0] || color.image);
 
     const availableSizesForNewColor = colorToAvailableSizesMap.get(color.name);
+    const currentSelectedCanonical = selectedSize ? canonicalizeSizeName(selectedSize) : "";
     if (
-      selectedSize &&
+      currentSelectedCanonical &&
       availableSizesForNewColor &&
-      !availableSizesForNewColor.has(selectedSize)
+      !availableSizesForNewColor.has(currentSelectedCanonical)
     ) {
       setSelectedSize("");
       setSelectedSizeObject(null);
@@ -763,23 +795,24 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
       setSelectedSize(autoSelectedSizeName);
       if (newlySelectedVariant) {
         const autoSelectedSizeObject = newlySelectedVariant.sizes.find(
-          (s) => s.name === autoSelectedSizeName,
+          (s) => canonicalizeSizeName(s.name) === autoSelectedSizeName,
         );
         setSelectedSizeObject(autoSelectedSizeObject || null);
       }
     } else if (selectedSize && newlySelectedVariant) {
       const currentSelectedSizeObject = newlySelectedVariant.sizes.find(
-        (s) => s.name === selectedSize,
+        (s) => canonicalizeSizeName(s.name) === currentSelectedCanonical,
       );
       setSelectedSizeObject(currentSelectedSizeObject || null);
     }
   };
 
   const handleSizeChange = (sizeName: string) => {
-    setSelectedSize(sizeName);
+    const canonical = canonicalizeSizeName(sizeName);
+    setSelectedSize(canonical);
     if (selectedVariantData) {
       const foundSize = selectedVariantData.sizes.find(
-        (s) => s.name === sizeName,
+        (s) => canonicalizeSizeName(s.name) === canonical,
       );
       setSelectedSizeObject(foundSize || null);
     }
@@ -802,14 +835,20 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
   const hasDiscount = resolvedSize ? sizeHasDiscount(resolvedSize) : false;
 
   // What the customer pays
-  const currentSelectedPrice: number = resolvedSize?.discountPrice ?? 0;
+  const currentSelectedPrice: number = resolvedSize
+    ? getEffectivePrice(resolvedSize)
+    : 0;
 
   const currentSelectedOriginalPrice: number = resolvedSize?.price ?? 0;
 
   const currentSelectedDiscount: string =
-    resolvedSize && resolvedSize.price > resolvedSize.discountPrice
+    hasDiscount && resolvedSize && resolvedSize.price > 0
       ? `${Math.round(((resolvedSize.price - resolvedSize.discountPrice) / resolvedSize.price) * 100)}`
       : "0";
+
+  const isProductUnavailable =
+    (selectedSizeObject ? selectedSizeObject.stock <= 0 : product.stock <= 0) ||
+    currentSelectedPrice <= 0;
   // ─────────────────────────────────────────────────────────────────────────
 
   const productInfoData: ProductInfoData = {
@@ -842,8 +881,12 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
   const adminPickedIds = new Set<string>(
     Array.isArray(product.similarProducts)
       ? (product.similarProducts as Array<{ _id: string } | string>)
-          .map((p) => (typeof p === "string" ? p : p?._id))
-          .filter((id): id is string => !!id)
+          .map((p) => {
+            if (typeof p === "string") return p;
+            if (p && typeof p === "object" && p._id) return String(p._id);
+            return "";
+          })
+          .filter((id): id is string => Boolean(id))
       : [],
   );
 
@@ -871,7 +914,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
           ? `${Math.round(((minMRP - minPrice) / minMRP) * 100)}%`
           : "0%";
 
-      const isAdminPick = adminPickedIds.has(p._id);
+      const isAdminPick = adminPickedIds.has(String(p._id));
 
       return {
         id: p.slug,
@@ -967,7 +1010,7 @@ const ProductDetailClient = ({ slug }: { slug: string }) => {
               setPincode={setPincode}
               pincodeMessage={pincodeMessage}
               checkPincode={checkPincode}
-              isOutOfStock={selectedSizeObject ? selectedSizeObject.stock <= 0 : product.stock <= 0}
+              isOutOfStock={isProductUnavailable}
               selectedVariantData={selectedVariantData}
               selectedVariantSizes={currentSelectedVariant?.sizes || []}
               hasSizeChart={Boolean(sizeChartData)}

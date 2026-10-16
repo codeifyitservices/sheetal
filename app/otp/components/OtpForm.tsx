@@ -273,14 +273,20 @@ const OtpForm = () => {
       toast.success("OTP sent again.");
       inputRefs.current[0]?.focus();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Failed to resend OTP.";
+      const firebaseError = error as { code?: string; message?: string };
       logAuthDebug("otp", "resend:error", {
-        message: error instanceof Error ? error.message : String(error),
+        code: firebaseError.code || "",
+        message: firebaseError.message || String(error),
       });
       resetRecaptcha(RECAPTCHA_CONTAINER_ID);
-      if (!isRecaptchaAlreadyRenderedError(error)) {
-        toast.error(message);
+
+      if (firebaseError.code === "auth/billing-not-enabled") {
+        toast.error(
+          "SMS service requires Firebase Blaze (billing) enabled, or use a test phone number added in Firebase Console.",
+          { duration: 8000 }
+        );
+      } else if (!isRecaptchaAlreadyRenderedError(error)) {
+        toast.error(firebaseError.message || "Failed to resend OTP.");
       }
     } finally {
       setResending(false);

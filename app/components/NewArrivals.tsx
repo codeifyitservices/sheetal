@@ -53,17 +53,54 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
     if (emblaApi) emblaApi.reInit();
   }, [emblaApi, products]);
 
+  const isAvailableProduct = (p: Product): boolean => {
+    if (!p || !p._id || !p.slug || !p.name) return false;
+    if (p.status && p.status !== "Active") return false;
+
+    const hasVariantSizes = p.variants?.some(
+      (v: any) => Array.isArray(v.sizes) && v.sizes.length > 0,
+    );
+    const hasInStockVariant = p.variants?.some((v: any) =>
+      v.sizes?.some((s: any) => Number(s.stock || 0) > 0),
+    );
+    const isInStock = hasVariantSizes
+      ? Boolean(hasInStockVariant) && (p.stock === undefined || p.stock > 0)
+      : Number(p.stock || 0) > 0;
+
+    if (!isInStock) return false;
+
+    let minPrice = Infinity;
+    p.variants?.forEach((v: any) => {
+      v.sizes?.forEach((s: any) => {
+        const effective = s.discountPrice > 0 ? s.discountPrice : s.price;
+        if (effective > 0 && effective < minPrice) {
+          minPrice = effective;
+        }
+      });
+    });
+
+    if (minPrice === Infinity && Number(p.price || 0) > 0) {
+      minPrice = Number(p.price);
+    }
+
+    return minPrice > 0 && minPrice !== Infinity;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (propProducts && propProducts.length > 0) {
-        setProducts(propProducts);
+        setProducts(propProducts.filter(isAvailableProduct));
         setLoading(false);
         return;
       }
       try {
         setLoading(true);
         const res = await getNewArrivals();
-        if (res.success) setProducts(res.products);
+        if (res.success && res.products) {
+          setProducts(res.products.filter(isAvailableProduct));
+        } else {
+          setProducts([]);
+        }
       } catch (err) {
         console.error("Failed to fetch new arrivals:", err);
       } finally {
@@ -80,7 +117,7 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
     product.variants?.forEach((v: any) => {
       v.sizes?.forEach((s: any) => {
         const effective = s.discountPrice > 0 ? s.discountPrice : s.price;
-        if (effective < minPrice) {
+        if (effective > 0 && effective < minPrice) {
           minPrice = effective;
           relatedMrp = s.price;
         }
@@ -98,8 +135,8 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
         : "";
 
     return {
-      price: `₹ ${minPrice.toFixed(2)}`,
-      mrp: `₹ ${relatedMrp.toFixed(2)}`,
+      price: minPrice > 0 ? `₹ ${minPrice.toFixed(2)}` : "Price on Request",
+      mrp: minPrice > 0 && relatedMrp > 0 ? `₹ ${relatedMrp.toFixed(2)}` : "",
       discount,
     };
   };
@@ -230,6 +267,8 @@ const NewArrivals = ({ content }: { content?: NewArrivalsContent }) => {
       </div>
     </div>
   );
+
+  if (!loading && products.length === 0) return null;
 
   return (
     <div className="container-fluid px-4 py-10 sm:px-6 md:py-16 lg:px-20 font-[family-name:var(--font-montserrat)]">

@@ -12,6 +12,10 @@ const apiHost = (() => {
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    qualities: [70, 72, 75, 78, 80, 85, 90, 100],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
@@ -55,6 +59,13 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.cache = { type: "memory" };
+    }
+    return config;
+  },
+  turbopack: {},
 };
 
 export default nextConfig;
