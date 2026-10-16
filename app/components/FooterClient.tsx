@@ -60,13 +60,15 @@ export type RawFooterBlock = {
 const FooterClient = ({
   layout,
   whatsapp,
+  logoUrl: initialLogoUrl,
 }: {
   layout: FooterBlock[];
   whatsapp?: string;
+  logoUrl?: string;
 }) => {
   const [resolvedLayout, setResolvedLayout] = useState(layout);
   const { settings } = useSettings();
-  const logoUrl = getLogoUrl(settings);
+  const logoUrl = initialLogoUrl || getLogoUrl(settings);
 
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const pathname = usePathname();
@@ -332,13 +334,17 @@ const FooterClient = ({
         target="_blank"
         href={`https://api.whatsapp.com/send?phone=${finalWhatsapp}`}
         rel="noopener"
-        className="fixed bottom-[84px] left-[18px] z-[999]"
+        aria-label="Chat on WhatsApp"
+        className="fixed bottom-[84px] left-[18px] z-[999] block transition-transform hover:scale-110 active:scale-95"
       >
         <Image
           src="/assets/icons/whatsapp.png"
           alt="WhatsApp chat"
           width={60}
           height={60}
+          className="h-[60px] w-[60px] object-contain drop-shadow-md"
+          unoptimized
+          priority
         />
       </a>
     </>

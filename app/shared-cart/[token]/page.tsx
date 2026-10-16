@@ -1,21 +1,20 @@
 "use client";
-
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import Footer from "@/app/components/Footer";
-import { getApiImageUrl } from "@/app/services/api";
+import Footer from "../../components/Footer";
+import { getApiImageUrl } from "../../services/api";
 import { getSharedCart } from "../../services/cartService";
 import { useSettings } from "../../hooks/useSettings";
 import { getLogoUrl } from "../../services/settingsService";
 
-import { getSettings } from "@/app/services/settingsService";
-import { isAuthenticated } from "@/app/services/authService";
-import { redirectToLogin } from "@/app/utils/authRedirect";
-import { buildProductHref } from "@/app/utils/productRoutes";
-import type { CartItem } from "@/app/hooks/useCart";
-import HideStorefrontHeader from "@/app/components/HideStorefrontHeader";
+import { getSettings } from "../../services/settingsService";
+import { isAuthenticated } from "../../services/authService";
+import { redirectToLogin } from "../../utils/authRedirect";
+import { buildProductHref } from "../../utils/productRoutes";
+import type { CartItem } from "../../hooks/useCart";
+import HideStorefrontHeader from "../../components/HideStorefrontHeader";
 
 const SharedCartPage = () => {
   const { settings: brandSettings } = useSettings();

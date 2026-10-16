@@ -4,7 +4,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getMyOrders } from "../../services/orderService";
+import {
+  getMyOrders,
+  cancelOrder,
+  requestOrderReturn,
+} from "../../services/orderService";
 import { addReview } from "../../services/productService";
 import { getApiImageUrl } from "../../services/api";
 import { buildProductHref } from "../../utils/productRoutes";
@@ -24,8 +28,9 @@ type OrderStatus =
 /** Shape of a single item inside an order (as returned by backend) */
 interface RawOrderItem {
   _id: string;
-  product: string | null;
+  product: string | { _id: string; slug?: string } | null;
   name: string;
+  slug?: string;
   image: string;
   price: number;
   quantity: number;
@@ -100,6 +105,7 @@ interface UIOrder {
 interface UIOrderItem {
   id: string;
   productId: string | null;
+  slug?: string;
   name: string;
   image: string;
   color: string;
@@ -125,7 +131,17 @@ const normaliseOrder = (raw: RawOrder): UIOrder => ({
   deliveredAt: raw.deliveredAt,
   items: raw.orderItems.map((item) => ({
     id: item._id,
-    productId: item.product,
+    productId:
+      typeof item.product === "object" && item.product !== null
+        ? item.product._id
+        : typeof item.product === "string"
+          ? item.product
+          : null,
+    slug:
+      item.slug ||
+      (typeof item.product === "object" && item.product !== null
+        ? item.product.slug
+        : undefined),
     name: item.name,
     image: getApiImageUrl(item.image),
     color: item.variant?.color || "—",
@@ -395,35 +411,248 @@ const TrackModal = ({
 const CancelModal = ({
   order,
   onClose,
+  onSuccess,
 }: {
   order: UIOrder;
   onClose: () => void;
-}) => (
-  <ModalShell title="Cancel Order" onClose={onClose}>
-    <p className="text-sm text-gray-600 mb-2">
-      Are you sure you want to cancel order{" "}
-      <span className="font-semibold text-gray-900">#{order.orderId}</span>?
-    </p>
-    <p className="text-xs text-gray-400 mb-6 leading-relaxed">
-      Your request will be registered. Our customer support team will contact
-      you shortly. Thank you for shopping with us.
-    </p>
-    <div className="flex gap-3">
-      <button
-        onClick={onClose}
-        className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer"
-      >
-        Keep Order
-      </button>
-      <button
-        onClick={onClose}
-        className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition cursor-pointer"
-      >
-        Yes, Cancel
-      </button>
-    </div>
-  </ModalShell>
-);
+  onSuccess: (orderId: string) => void;
+}) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirmCancel = async () => {
+    try {
+      setLoading(true);
+      await cancelOrder(order.id);
+      toast.success("Order cancelled successfully");
+      onSuccess(order.id);
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to cancel order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ModalShell title="Cancel Order" onClose={onClose}>
+      <p className="text-sm text-gray-600 mb-2">
+        Are you sure you want to cancel order{" "}
+        <span className="font-semibold text-gray-900">#{order.orderId}</span>?
+      </p>
+      <p className="text-xs text-gray-400 mb-6 leading-relaxed">
+        Your request will be registered. Our customer support team will contact
+        you shortly. Thank you for shopping with us.
+      </p>
+      <div className="flex gap-3">
+        <button
+          onClick={onClose}
+          disabled={loading}
+          className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer disabled:opacity-50"
+        >
+          Keep Order
+        </button>
+        <button
+          onClick={handleConfirmCancel}
+          disabled={loading}
+          className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Cancelling...
+            </>
+          ) : (
+            "Yes, Cancel"
+          )}
+        </button>
+      </div>
+    </ModalShell>
+  );
+};
+
+/** Return / Exchange modal */
+const RETURN_REASONS = [
+  "Wrong Size",
+  "Defective Product",
+  "Quality not as expected",
+  "Changed my mind",
+  "Wrong item sent",
+];
+
+const ReturnModal = ({
+  order,
+  item,
+  onClose,
+  onSuccess,
+}: {
+  order: UIOrder;
+  item: UIOrderItem;
+  onClose: () => void;
+  onSuccess: (orderId: string) => void;
+}) => {
+  const [type, setType] = useState<"Return" | "Exchange">("Return");
+  const [reason, setReason] = useState(RETURN_REASONS[0]);
+  const [details, setDetails] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      const res = await requestOrderReturn({
+        orderId: order.id,
+        productId: item.productId,
+        type,
+        reason,
+        details: details.trim(),
+      });
+
+      if (res && res.success !== false) {
+        toast.success("Return request submitted successfully");
+        onSuccess(order.id);
+        onClose();
+      } else {
+        toast.error(res?.message || "Failed to submit return request");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to submit return request");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <ModalShell title={`${type} Product`} onClose={onClose}>
+      {/* Product Summary Header */}
+      <div className="flex gap-3 mb-4 pb-4 border-b border-gray-100">
+        <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0 relative">
+          <Image
+            src={item.image}
+            alt={item.name}
+            fill
+            className="object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src =
+                "/assets/images/product-placeholder.webp";
+            }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
+            {item.name}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            <span className="font-medium text-gray-700">Color:</span> {item.color} ·{" "}
+            <span className="font-medium text-gray-700">Size:</span> {item.size}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Order #{order.orderId}
+          </p>
+        </div>
+      </div>
+
+      {/* Type selection: Return or Exchange toggle */}
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+          Request Type
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(["Return", "Exchange"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setType(t)}
+              className={`py-2 px-3 text-xs font-semibold rounded-lg border transition cursor-pointer text-center ${
+                type === t
+                  ? "border-[#a97f0f] bg-[#fbf7ed] text-[#855f0b]"
+                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Reason selection */}
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+          Reason for {type}
+        </label>
+        <div className="relative">
+          <select
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={submitting}
+            className="w-full appearance-none bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a97f0f] focus:border-[#a97f0f] cursor-pointer disabled:bg-gray-50 disabled:text-gray-400"
+          >
+            {RETURN_REASONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <svg
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Additional details */}
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+          Additional Details (Optional)
+        </label>
+        <textarea
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder={`Please provide any extra information about your ${type.toLowerCase()} request…`}
+          rows={3}
+          disabled={submitting}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-1 focus:ring-[#a97f0f] focus:border-[#a97f0f] placeholder-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
+        />
+      </div>
+
+      <p className="text-[10px] text-gray-400 mb-4 leading-relaxed">
+        Our customer support team will review your request within 24-48 business hours. Please ensure the product is unused with original tags intact.
+      </p>
+
+      {/* Action buttons */}
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={submitting}
+          className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition cursor-pointer disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="flex-1 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-black transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {submitting ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            "Submit Request"
+          )}
+        </button>
+      </div>
+    </ModalShell>
+  );
+};
 
 /** Write Review modal */
 const ReviewModal = ({
@@ -542,6 +771,7 @@ interface OrderCardProps {
   order: UIOrder;
   onTrack: () => void;
   onCancel: () => void;
+  onReturn: (order: UIOrder, item: UIOrderItem) => void;
   onReview: (item: UIOrderItem) => void;
   onBuyAgain: (item: UIOrderItem) => void;
 }
@@ -606,7 +836,14 @@ const DeliveryLine = ({ order }: { order: UIOrder }) => {
   );
 };
 
-const OrderCard = ({ order, onTrack, onCancel, onReview, onBuyAgain }: OrderCardProps) => (
+const OrderCard = ({
+  order,
+  onTrack,
+  onCancel,
+  onReturn,
+  onReview,
+  onBuyAgain,
+}: OrderCardProps) => (
   <div className="border border-gray-400 bg-transparent mb-6 overflow-hidden rounded-md p-6">
     {/* ── Order ID strip ── */}
     <div className="flex justify-end items-center px-0 py-1.5 mb-1">
@@ -743,7 +980,10 @@ const OrderCard = ({ order, onTrack, onCancel, onReview, onBuyAgain }: OrderCard
               >
                 {item.isReviewed ? "Review Submitted" : "Write Review"}
               </button>
-              <button className="flex-1 py-1.5 rounded border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer">
+              <button
+                onClick={() => onReturn(order, item)}
+                className="flex-1 py-1.5 rounded border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+              >
                 Return
               </button>
               <button
@@ -803,6 +1043,10 @@ const OrdersPage = () => {
   // ── Modal state ───────────────────────────────────────────────────────────
   const [trackOrder, setTrackOrder] = useState<UIOrder | null>(null);
   const [cancelOrder, setCancelOrder] = useState<UIOrder | null>(null);
+  const [returnTarget, setReturnTarget] = useState<{
+    order: UIOrder;
+    item: UIOrderItem;
+  } | null>(null);
   const [reviewItem, setReviewItem] = useState<UIOrderItem | null>(null);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -840,6 +1084,7 @@ const OrdersPage = () => {
       product: {
         _id: item.productId,
         name: item.name,
+        slug: item.slug,
         mainImage: { url: item.image },
       },
       size: item.size,
@@ -850,8 +1095,10 @@ const OrdersPage = () => {
       variantImage: item.image,
     };
 
-    const encoded = encodeURIComponent(JSON.stringify(buyNowItem));
-    router.push(`/checkout/address?buynow=${encoded}`);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("buy_now_item", JSON.stringify(buyNowItem));
+    }
+    router.push("/checkout/address?buynow=1");
   };
 
   // Reset to page 1 when status filter changes
@@ -1000,7 +1247,7 @@ const OrdersPage = () => {
                 : "Try adjusting your search or filter"}
             </p>
             <Link
-              href="/shop"
+              href="/product-list"
               className="mt-5 px-6 py-2.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-black transition font-medium"
             >
               Start Shopping
@@ -1017,6 +1264,9 @@ const OrdersPage = () => {
                 order={order}
                 onTrack={() => setTrackOrder(order)}
                 onCancel={() => setCancelOrder(order)}
+                onReturn={(ord, itm) =>
+                  setReturnTarget({ order: ord, item: itm })
+                }
                 onReview={(item) => setReviewItem(item)}
                 onBuyAgain={handleBuyAgain}
               />
@@ -1062,13 +1312,41 @@ const OrdersPage = () => {
         <TrackModal order={trackOrder} onClose={() => setTrackOrder(null)} />
       )}
       {cancelOrder && (
-        <CancelModal order={cancelOrder} onClose={() => setCancelOrder(null)} />
+        <CancelModal
+          order={cancelOrder}
+          onClose={() => setCancelOrder(null)}
+          onSuccess={(cancelledId) => {
+            setOrders((prev) =>
+              prev.map((ord) =>
+                ord.id === cancelledId ? { ...ord, status: "Cancelled" } : ord
+              )
+            );
+            fetchOrders(currentPage, statusFilter);
+          }}
+        />
       )}
       {reviewItem && (
         <ReviewModal
           item={reviewItem}
           onClose={() => setReviewItem(null)}
           onSuccess={() => fetchOrders(currentPage, statusFilter)}
+        />
+      )}
+      {returnTarget && (
+        <ReturnModal
+          order={returnTarget.order}
+          item={returnTarget.item}
+          onClose={() => setReturnTarget(null)}
+          onSuccess={(returnedOrderId) => {
+            setOrders((prev) =>
+              prev.map((ord) =>
+                ord.id === returnedOrderId
+                  ? { ...ord, status: "Return Requested" }
+                  : ord
+              )
+            );
+            fetchOrders(currentPage, statusFilter);
+          }}
         />
       )}
     </>

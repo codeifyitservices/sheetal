@@ -108,7 +108,9 @@ const LoginForm = () => {
       : loginCoupon?.offerType === "FixedAmount"
         ? `Flat ₹${loginCoupon.offerValue} off`
         : loginCoupon?.offerType === "BOGO"
-          ? "Buy One Get One Free"
+          ? (loginCoupon as any).buyQuantity && (loginCoupon as any).getQuantity
+            ? `Buy ${(loginCoupon as any).buyQuantity} Get ${(loginCoupon as any).getQuantity} Free`
+            : "Buy One Get One Free"
           : "Special login offer");
   const loginCouponCode =
     loginCoupon?.couponType === "CouponCode" ? loginCoupon.code || null : null;
@@ -185,15 +187,21 @@ const LoginForm = () => {
       );
       router.push("/otp");
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Failed to send OTP";
+      const firebaseError = error as { code?: string; message?: string };
       console.error("OTP error:", error);
       logAuthDebug("login-phone", "send-otp:error", {
-        message: error instanceof Error ? error.message : String(error),
+        code: firebaseError.code || "",
+        message: firebaseError.message || String(error),
       });
       resetRecaptcha(RECAPTCHA_CONTAINER_ID);
-      if (!isRecaptchaAlreadyRenderedError(error)) {
-        toast.error(message);
+
+      if (firebaseError.code === "auth/billing-not-enabled") {
+        toast.error(
+          "SMS service requires Firebase Blaze (billing) enabled, or use a test phone number added in Firebase Console.",
+          { duration: 8000 }
+        );
+      } else if (!isRecaptchaAlreadyRenderedError(error)) {
+        toast.error(firebaseError.message || "Failed to send OTP");
       }
     } finally {
       setLoading(false);

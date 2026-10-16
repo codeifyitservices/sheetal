@@ -1,6 +1,7 @@
 // app/[category]/page.tsx
 import React from "react";
-import ProductList from "../product-list/page";
+import ProductList from "../product-list/ProductListClient";
+import Footer from "../components/Footer";
 import { Metadata } from "next";
 import { fetchCategoryBySlugServer } from "../services/categoryService";
 import { notFound } from "next/navigation";
@@ -129,6 +130,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     <>
       <JsonLd data={schema} />
       <ProductList categorySlug={category} />
+      <Footer />
     </>
   );
 }

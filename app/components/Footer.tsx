@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from "../services/api";
+import { getLogoUrl } from "../services/settingsService";
 import FooterClient, {
   type FooterBlock,
   type RawFooterBlock,
@@ -110,7 +111,11 @@ const convertOldToNew = (old: RawFooterBlock[]): FooterBlock[] => {
   return [doubleBlock, singleBlock];
 };
 
-async function getFooterData(): Promise<{ layout: FooterBlock[]; whatsapp?: string }> {
+async function getFooterData(): Promise<{
+  layout: FooterBlock[];
+  whatsapp?: string;
+  logoUrl?: string;
+}> {
   try {
     let settings: Record<string, any> = {};
     let footerPages: {
@@ -121,9 +126,7 @@ async function getFooterData(): Promise<{ layout: FooterBlock[]; whatsapp?: stri
     }[] = [];
 
     try {
-      const settingsResponse = await fetch(`${API_BASE_URL}/settings`, {
-        next: { revalidate: 300 },
-      });
+      const settingsResponse = await fetch(`${API_BASE_URL}/settings`);
       const settingsJson = await settingsResponse.json();
       settings = settingsJson?.data || {};
     } catch {
@@ -131,9 +134,7 @@ async function getFooterData(): Promise<{ layout: FooterBlock[]; whatsapp?: stri
     }
 
     try {
-      const pagesResponse = await fetch(`${API_BASE_URL}/pages/public/footer`, {
-        next: { revalidate: 300 },
-      });
+      const pagesResponse = await fetch(`${API_BASE_URL}/pages/public/footer`);
       const pagesJson = await pagesResponse.json();
       footerPages = Array.isArray(pagesJson?.pages) ? pagesJson.pages : [];
     } catch {
@@ -142,6 +143,7 @@ async function getFooterData(): Promise<{ layout: FooterBlock[]; whatsapp?: stri
 
     const raw = (settings.footerLayout || []) as RawFooterBlock[];
     const whatsapp = settings.supportWhatsapp;
+    const logoUrl = getLogoUrl(settings);
 
     const appendStaticPages = (layout: FooterBlock[]): FooterBlock[] => {
       const nextLayout = JSON.parse(JSON.stringify(layout)) as FooterBlock[];
@@ -205,45 +207,44 @@ async function getFooterData(): Promise<{ layout: FooterBlock[]; whatsapp?: stri
     };
 
     if (!Array.isArray(raw) || raw.length === 0) {
-      return { layout: appendStaticPages(defaultLayout), whatsapp };
+      return { layout: appendStaticPages(defaultLayout), whatsapp, logoUrl };
     }
 
     const hasNavbarStructure =
       raw[0].hasOwnProperty("isDroppable") ||
       raw[0].hasOwnProperty("children");
     if (hasNavbarStructure) {
-      return { layout: appendStaticPages(defaultLayout), whatsapp };
+      return { layout: appendStaticPages(defaultLayout), whatsapp, logoUrl };
     }
 
     if (isNewFormat(raw)) {
-      return { layout: appendStaticPages(raw), whatsapp };
+      return { layout: appendStaticPages(raw), whatsapp, logoUrl };
     }
 
     if (isOldFlatFormat(raw)) {
-      return { layout: appendStaticPages(convertOldToNew(raw)), whatsapp };
+      return { layout: appendStaticPages(convertOldToNew(raw)), whatsapp, logoUrl };
     }
 
-    return { layout: appendStaticPages(defaultLayout), whatsapp };
+    return { layout: appendStaticPages(defaultLayout), whatsapp, logoUrl };
   } catch {
     return { layout: defaultLayout };
   }
 }
 
 const Footer = () => {
-  const [isMounted, setIsMounted] = useState(false);
   const [layout, setLayout] = useState<FooterBlock[]>(defaultLayout);
   const [whatsapp, setWhatsapp] = useState<string | undefined>();
+  const [logoUrl, setLogoUrl] = useState<string | undefined>();
 
   useEffect(() => {
     let isActive = true;
 
-    setIsMounted(true);
-
     const loadFooter = async () => {
       const data = await getFooterData();
       if (!isActive) return;
-      setLayout(data.layout);
-      setWhatsapp(data.whatsapp);
+      if (data.layout) setLayout(data.layout);
+      if (data.whatsapp) setWhatsapp(data.whatsapp);
+      if (data.logoUrl) setLogoUrl(data.logoUrl);
     };
 
     void loadFooter();
@@ -253,11 +254,13 @@ const Footer = () => {
     };
   }, []);
 
-  if (!isMounted) {
-    return <div className="mt-20 w-full bg-[#082722]" aria-hidden="true" />;
-  }
-
-  return <FooterClient layout={layout} whatsapp={whatsapp} />;
+  return (
+    <FooterClient
+      layout={layout}
+      whatsapp={whatsapp}
+      logoUrl={logoUrl}
+    />
+  );
 };
 
 export default Footer;

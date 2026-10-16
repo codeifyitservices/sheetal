@@ -324,12 +324,17 @@ const setViewMode = (mode: "grid" | "list") => {
           size.discountPrice && size.discountPrice > 0
             ? size.discountPrice
             : size.price;
-        if (currentPrice < lowestPrice) {
+        if (currentPrice > 0 && currentPrice < lowestPrice) {
           lowestPrice = currentPrice;
           lowestMrp = size.price;
         }
       });
     });
+
+    if (lowestPrice === Infinity) {
+      lowestPrice = 0;
+      lowestMrp = 0;
+    }
 
     const discountPercent =
       lowestMrp > 0 && lowestPrice < lowestMrp

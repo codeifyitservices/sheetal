@@ -14,6 +14,7 @@ export interface Blog {
   content: string;
   excerpt: string;
   author: User;
+  authorName?: string;
   bannerImage: BlogImage;
   contentImage?: BlogImage;
   imageAlt?: string;

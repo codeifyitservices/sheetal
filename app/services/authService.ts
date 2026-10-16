@@ -148,6 +148,33 @@ export const getToken = (): string | undefined => {
   return token;
 };
 
+const decodeUserFromToken = (token: string): User | null => {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(payloadBase64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    const decoded = JSON.parse(jsonPayload);
+    const id = decoded.id || decoded._id || decoded.userId;
+    if (id) {
+      return {
+        id: String(id),
+        name: decoded.name || "",
+        email: decoded.email || "",
+        role: decoded.role || "user",
+      };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
+
 export const getUserDetails = (): User | null => {
   if (typeof window === "undefined") {
     // Check if running on client side
@@ -155,6 +182,10 @@ export const getUserDetails = (): User | null => {
   }
   const userJson = localStorage.getItem(USER_KEY);
   if (!userJson) {
+    const token = getToken();
+    if (token) {
+      return decodeUserFromToken(token);
+    }
     return null;
   }
 
@@ -164,8 +195,21 @@ export const getUserDetails = (): User | null => {
     if (!user.id && (user as any)._id) {
       user.id = (user as any)._id;
     }
+    if (!user.id) {
+      const token = getToken();
+      if (token) {
+        const decodedUser = decodeUserFromToken(token);
+        if (decodedUser?.id) {
+          user.id = decodedUser.id;
+        }
+      }
+    }
     return user;
   } catch {
+    const token = getToken();
+    if (token) {
+      return decodeUserFromToken(token);
+    }
     return null;
   }
 };

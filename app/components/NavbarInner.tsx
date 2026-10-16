@@ -36,9 +36,7 @@ import {
 import { useSettings } from "../hooks/useSettings";
 import { getLogoUrl } from "../services/settingsService";
 
-const SearchModal = dynamic(() => import("./SearchModal"), {
-  ssr: false,
-});
+const SearchModal = dynamic(() => import("./SearchModal"));
 
 const GUEST_CART_KEY = "guest_cart";
 
@@ -129,12 +127,14 @@ const fetchLatestMegaMenuProducts = async (categoryId: string) => {
 const DynamicMegaMenu = ({
   category,
   handleCloseMegaMenu,
+  logoUrl: initialLogoUrl,
 }: {
   category: Partial<Category>;
   handleCloseMegaMenu: () => void;
+  logoUrl?: string;
 }) => {
   const { settings } = useSettings();
-  const logoUrl = getLogoUrl(settings);
+  const logoUrl = initialLogoUrl || getLogoUrl(settings);
 
   const tagGroups = [
     {
@@ -304,6 +304,7 @@ const NavbarUserIcon: React.FC<NavbarUserIconProps> = ({
           width={24}
           height={24}
           className="w-6 h-6"
+          unoptimized
         />
       </Link>
     );
@@ -326,6 +327,7 @@ const NavbarUserIcon: React.FC<NavbarUserIconProps> = ({
             width={24}
             height={24}
             className="w-6 h-6"
+            unoptimized
           />
         </Link>
         {isUserDropdownOpen && (
@@ -831,12 +833,14 @@ const MobileMenuOverlay = ({
 const NavbarInner = ({
   initialNavItems,
   topInfoEnabled,
+  logoUrl: initialLogoUrl,
 }: {
   initialNavItems: NavbarNavItem[];
   topInfoEnabled: boolean;
+  logoUrl?: string;
 }) => {
   const { settings } = useSettings();
-  const logoUrl = getLogoUrl(settings);
+  const logoUrl = initialLogoUrl || getLogoUrl(settings);
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1201,6 +1205,7 @@ const NavbarInner = ({
                   width={24}
                   height={24}
                   className="w-7 h-7"
+                  unoptimized
                 />
               </button>
               <NavbarUserIcon
@@ -1222,6 +1227,7 @@ const NavbarInner = ({
                   width={24}
                   height={24}
                   className="w-6 h-6"
+                  unoptimized
                 />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
@@ -1239,7 +1245,8 @@ const NavbarInner = ({
                     alt="Cart"
                     width={24}
                     height={24}
-                    className="w-7 h-7"
+                    className="w-6 h-6"
+                    unoptimized
                   />
                   {cartItemCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
@@ -1319,6 +1326,7 @@ const NavbarInner = ({
             <DynamicMegaMenu
               category={activeMegaMenuItem}
               handleCloseMegaMenu={() => setActiveMegaMenuItem(null)}
+              logoUrl={logoUrl}
             />
           </div>
         )}
@@ -1357,6 +1365,7 @@ const NavbarInner = ({
           width={24}
           height={24}
           className="w-8 h-8"
+          unoptimized
         />
       </button>
 
@@ -1383,6 +1392,7 @@ const NavbarInner = ({
           width={24}
           height={24}
           className="w-6 h-6"
+          unoptimized
         />
         {wishlistCount > 0 && (
           <span className="absolute top-1 right-1 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[9px] min-w-[16px] h-4 flex items-center justify-center rounded-full px-0.5 leading-none">
@@ -1400,9 +1410,10 @@ const NavbarInner = ({
         <Image
           src="/assets/icons/shopping-bag.svg"
           alt=""
-          width={2}
+          width={24}
           height={24}
           className="w-9 h-9 mb-2"
+          unoptimized
         />
         {cartItemCount > 0 && (
           <span className="absolute top-0 right-0 bg-[#1f3c38] border border-[#f1bf42] text-[#f1bf42] text-[9px] min-w-[16px] h-4 flex items-center justify-center rounded-full px-0.5 leading-none">

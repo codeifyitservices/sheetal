@@ -25,6 +25,7 @@ const FilterSortMobile: React.FC<FilterSortMobileProps> = ({
             width={16}
             height={16}
             alt="Sort"
+            unoptimized
           />
           Sort By
         </button>
@@ -39,6 +40,7 @@ const FilterSortMobile: React.FC<FilterSortMobileProps> = ({
             width={16}
             height={16}
             alt="Filter"
+            unoptimized
           />
           Filter
           {activeFilterCount > 0 && (

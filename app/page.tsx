@@ -65,12 +65,10 @@ export default async function Home() {
       <Suspense fallback={<HomeBannerLoader />}>
         {s?.homeBanner && <HomeBanner />}
       </Suspense>
-      <Suspense>
-        {s?.aboutSBS && <AboutSBS content={settings.aboutSBS} />}
-        {s?.hiddenBeauty && <HiddenBeauty content={settings.hiddenBeauty} />}
-        <HomeDeferredSections settings={settings} />
-        <Footer />
-      </Suspense>
+      {s?.aboutSBS && <AboutSBS content={settings.aboutSBS} />}
+      {s?.hiddenBeauty && <HiddenBeauty content={settings.hiddenBeauty} />}
+      <HomeDeferredSections settings={settings} />
+      <Footer />
     </>
   );
 }

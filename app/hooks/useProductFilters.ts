@@ -41,14 +41,13 @@ export const normalizeColorName = (name: string) => {
     .join(" ");
 };
 
+import { canonicalizeSizeName } from "../utils/sizeUtils";
+
 /**
  * Helper to normalize size names for consistent grouping
  */
 export const normalizeSizeName = (name: string) => {
-  if (!name) return "";
-  const trimmed = name.trim();
-  if (trimmed.toLowerCase() === "free size") return "Free Size";
-  return trimmed.toUpperCase();
+  return canonicalizeSizeName(name);
 };
 
 /**

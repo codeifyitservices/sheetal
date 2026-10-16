@@ -83,12 +83,6 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
             My Addresses
           </h4>
         );
-      case "delete-account":
-        return (
-          <h4 className="text-2xl font-semibold text-gray-800 mb-6">
-            Delete Account
-          </h4>
-        );
       case "terms-conditions":
         return (
           <h4 className="text-2xl font-semibold text-gray-800 mb-6">

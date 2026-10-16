@@ -131,7 +131,7 @@ const WishlistContent = () => {
           size.discountPrice && size.discountPrice > 0
             ? size.discountPrice
             : size.price;
-        if (currentPrice < lowestPrice) {
+        if (currentPrice > 0 && currentPrice < lowestPrice) {
           lowestPrice = currentPrice;
           lowestMrp = size.price;
         }

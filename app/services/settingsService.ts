@@ -20,6 +20,9 @@ interface Settings {
   returnPolicyContent: string;
   supportEmail: string;
   supportWhatsapp: string;
+  contactSubtitle?: string;
+  contactWriteUsTitle?: string;
+  contactWriteUsSubtitle?: string;
   globalHsnCode?: string;
   deliveryPoint2?: string;
   deliveryPoint3?: string;
@@ -50,12 +53,18 @@ export const getSettings = async (): Promise<Settings> => {
     returnPolicyContent: "Your satisfaction is our top priority. If you're not completely satisfied with the product, we offer a hassle-free, no questions asked 7 days return and refund.",
     supportEmail: "info@studiobysheetal.com",
     supportWhatsapp: "919958813913",
+    contactSubtitle: "Please contact us with any questions or concerns.",
+    contactWriteUsTitle: "Write to us:",
+    contactWriteUsSubtitle:
+      "Thank you for visiting us. We'd love to hear from you. Please fill in the details below. Our team member will contact you shortly.",
     deliveryPoint2: "Pay on delivery available",
     deliveryPoint3: "Easy 7 days return & exchange available",
   };
 };
 
-export const getLogoUrl = (settings: Settings | null): string => {
+export const getLogoUrl = (
+  settings?: { logo?: { url?: string } } | Record<string, any> | null,
+): string => {
   return settings?.logo?.url || "/assets/335014072.png";
 };
 

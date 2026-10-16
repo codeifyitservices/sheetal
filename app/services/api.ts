@@ -5,8 +5,18 @@ import { storeRedirectTarget } from "../utils/authRedirect";
  * Central API configuration and base fetcher
  */
 
-export const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const resolveBaseUrl = () => {
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+  ) {
+    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+};
+
+export const BASE_URL = resolveBaseUrl();
 export const API_BASE_URL = `${BASE_URL}/api/v1`;
 
 export const handleResponse = async (res: Response) => {
@@ -70,7 +80,10 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   const method = (options.method || "GET").toUpperCase();
-  const resolvedCache = options.cache ?? (method === "GET" ? "no-store" : undefined);
+  const hasNextConfig = Boolean((options as any)?.next);
+  const resolvedCache =
+    options.cache ??
+    (method === "GET" && !hasNextConfig ? "no-store" : undefined);
 
   const res = await fetch(url, {
     ...options,
@@ -108,6 +121,7 @@ export const getApiImageUrl = (
   const value = typeof path === "string" ? path : path.url;
   if (!value) return fallback;
   if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/assets/")) return value;
   if (value.startsWith("/")) return `${BASE_URL}${value}`;
   return `${BASE_URL}/${value.replace(/^\/+/, "")}`;
 };

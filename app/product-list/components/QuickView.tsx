@@ -324,9 +324,17 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
       product: {
         _id: product._id,
         name: product.name,
+        slug: product.slug || (productSlug ?? undefined),
+        categorySlug: product.category?.slug,
         mainImage: product.mainImage,
         sku: product.sku,
-        category: product.category,
+        category: product.category
+          ? {
+              _id: product.category._id,
+              name: product.category.name,
+              slug: product.category.slug,
+            }
+          : undefined,
       },
       variantId: selectedVariant._id,
       variantSku: selectedVariant.v_sku || product.sku,
@@ -339,8 +347,11 @@ const QuickView: React.FC<QuickViewProps> = ({ productSlug, onClose }) => {
       variantImage: variantImageUrl,
     };
 
-    const encoded = encodeURIComponent(JSON.stringify(buyNowItem));
-    const checkoutUrl = `/checkout/address?buynow=${encoded}`;
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("buy_now_item", JSON.stringify(buyNowItem));
+    }
+
+    const checkoutUrl = `/checkout/address?buynow=1`;
 
     if (!isAuthenticated()) {
       redirectToLogin(router, checkoutUrl, {

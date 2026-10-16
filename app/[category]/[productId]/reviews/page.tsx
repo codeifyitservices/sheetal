@@ -75,15 +75,30 @@ export default async function ProductReviewsPage({
 
   return (
     <>
-      <main className="bg-[#f9f9f9] py-15 font-[family-name:var(--font-montserrat)]">
+      <main className="bg-[#f9f9f9] pt-28 md:pt-36 pb-16 font-[family-name:var(--font-montserrat)]">
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-start">
             <aside className="lg:w-1/5">
               <Link
                 href={backHref}
-                className="mb-6 inline-flex items-center text-sm font-semibold uppercase tracking-[0.2em] text-[#a2690f] hover:text-[#7d4e07] transition-colors"
+                className="mb-6 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#a2690f] hover:text-[#7d4e07] transition-colors group"
               >
-                Back
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-transform group-hover:-translate-x-1"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                <span>Back to Product</span>
               </Link>
               <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
                 <div className="relative aspect-[4/5] w-full">

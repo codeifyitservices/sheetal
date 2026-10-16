@@ -32,6 +32,8 @@ const optima = localFont({
     },
   ],
   variable: "--font-optima",
+  display: "swap",
+  fallback: ["Optima", "Candara", "Calibri", "Segoe", "serif"],
 });
 
 const montserrat = Montserrat({

@@ -14,34 +14,27 @@ const sectionShell = (className: string) => () => (
 );
 
 const TrendingThisWeek = dynamic(() => import("./TrendingThisWeek"), {
-  ssr: false,
   loading: sectionShell("px-4 py-12 lg:px-20"),
 });
 const NewArrivals = dynamic(() => import("./NewArrivals"), {
-  ssr: false,
   loading: sectionShell("px-4 py-12 lg:px-20"),
 });
 const Collections = dynamic(() => import("./Collections"), {
-  ssr: false,
   loading: sectionShell("px-4 py-12 lg:px-20"),
 });
 const TimelessWomenCollection = dynamic(
   () => import("./TimelessWomenCollection"),
   {
-    ssr: false,
     loading: sectionShell("px-4 py-12"),
   },
 );
 const InstagramDiaries = dynamic(() => import("./InstagramDiaries"), {
-  ssr: false,
   loading: sectionShell("px-4 py-12 lg:px-20"),
 });
 const Testimonials = dynamic(() => import("./Testimonials"), {
-  ssr: false,
   loading: sectionShell("px-4 py-12"),
 });
 const Blogs = dynamic(() => import("./Blogs"), {
-  ssr: false,
   loading: sectionShell("px-4 py-12"),
 });
 

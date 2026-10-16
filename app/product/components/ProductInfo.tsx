@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import StarRating from "./StarRating";
 import { ProductVariant } from "../../services/productService";
 import { getApiImageUrl } from "../../services/api";
+import { canonicalizeSizeName } from "../../utils/sizeUtils";
 
 interface ProductInfoProps {
   product: {
@@ -140,6 +141,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   const discountPercentageToDisplay = product.selectedDiscount
     ? Number(product.selectedDiscount)
     : 0;
+
+  const isUnavailable = isOutOfStock || priceToDisplay <= 0;
+
   const showStockLimitToast = (count: number) => {
     if (onQuantityLimitReached) {
       onQuantityLimitReached(count);
@@ -181,32 +185,44 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 
       <div className="mb-5">
         <div className="flex flex-wrap items-end gap-2 md:gap-3">
-          <span className="text-[22px] font-normal">
-            ₹ {priceToDisplay.toFixed(2)}
-          </span>
-          {originalPriceToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
-            <span className="text-[18px] text-gray-400 line-through">
-              ₹ {originalPriceToDisplay.toFixed(2)}
+          {priceToDisplay <= 0 ? (
+            <span className="text-[20px] md:text-[22px] font-medium text-[#683e14]">
+              Price on Request
             </span>
-          )}
-          {discountPercentageToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
-            <span className="text-[16px] text-[#6a3f0e] font-medium">
-              Save {discountPercentageToDisplay}%
-            </span>
+          ) : (
+            <>
+              <span className="text-[22px] font-normal">
+                ₹ {priceToDisplay.toFixed(2)}
+              </span>
+              {originalPriceToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
+                <span className="text-[18px] text-gray-400 line-through">
+                  ₹ {originalPriceToDisplay.toFixed(2)}
+                </span>
+              )}
+              {discountPercentageToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
+                <span className="text-[16px] text-[#6a3f0e] font-medium">
+                  Save {discountPercentageToDisplay}%
+                </span>
+              )}
+            </>
           )}
         </div>
         <p className="text-[13px] text-gray-500 mt-1">
-          Inclusive of all taxes.
+          {priceToDisplay <= 0 ? "Please enquire for pricing details." : "Inclusive of all taxes."}
         </p>
       </div>
 
       <div className="mb-5">
         <span
           className={`inline-block text-xs px-2 py-1 text-[15px] rounded ${
-            isOutOfStock ? "text-red-700" : "text-green-700"
+            isUnavailable ? "text-red-700 bg-red-50" : "text-green-700 bg-green-50"
           }`}
         >
-          {isOutOfStock ? "Out of Stock" : "In Stock"}
+          {priceToDisplay <= 0
+            ? "Unavailable"
+            : isOutOfStock
+              ? "Out of Stock"
+              : "In Stock"}
         </span>
       </div>
 
@@ -269,8 +285,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 
               const actualStock =
                 isAvailableForSelectedColor && selectedVariantSizes.length > 0
-                  ? selectedVariantSizes.find((s) => s.name === size.name)
-                      ?.stock
+                  ? selectedVariantSizes.find(
+                      (s) =>
+                        canonicalizeSizeName(s.name) ===
+                        canonicalizeSizeName(size.name),
+                    )?.stock
                   : undefined;
 
               const isSoldOut = actualStock !== undefined && actualStock <= 0;
@@ -322,7 +341,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       <div className="flex flex-col lg:hidden mb-5 border-b border-gray-100 pb-5 space-y-3">
-        {isOutOfStock ? (
+        {isUnavailable ? (
           <button
             onClick={onEnquire}
             className="text-[#bd9951] border border-[#bd9951] px-4 py-2 text-sm font-medium rounded-sm hover:bg-[#bd9951] hover:text-white transition-colors w-full"
@@ -341,7 +360,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       <div className="mb-6 hidden lg:block">
-        {isOutOfStock ? (
+        {isUnavailable ? (
           <button
             onClick={onEnquire}
             className="text-[#bd9951] border p-3 text-sm font-medium hover:bg-gray-100 cursor-pointer flex items-center w-full justify-center"
@@ -380,17 +399,25 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 
       <div className="fixed bottom-0 left-0 w-full bg-white z-[100] border-t border-gray-200 px-3 py-2 lg:hidden flex gap-2 items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <div className="flex flex-col shrink-0">
-          <span className="text-base font-bold leading-tight">
-            ₹ {priceToDisplay.toFixed(2)}
-          </span>
-          {originalPriceToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
-            <span className="text-xs text-gray-400 line-through">
-              ₹ {originalPriceToDisplay.toFixed(2)}
+          {priceToDisplay <= 0 ? (
+            <span className="text-sm font-bold text-[#683e14] leading-tight">
+              Price on Request
             </span>
+          ) : (
+            <>
+              <span className="text-base font-bold leading-tight">
+                ₹ {priceToDisplay.toFixed(2)}
+              </span>
+              {originalPriceToDisplay > 0 && originalPriceToDisplay !== priceToDisplay && (
+                <span className="text-xs text-gray-400 line-through">
+                  ₹ {originalPriceToDisplay.toFixed(2)}
+                </span>
+              )}
+            </>
           )}
         </div>
         <div className="flex gap-2 flex-1 justify-end">
-          {isOutOfStock ? (
+          {isUnavailable ? (
             <button
               onClick={onEnquire}
               className="flex-1 bg-[#bd9951] text-white uppercase font-bold text-xs py-3 rounded-sm hover:bg-[#a38547] transition-colors"

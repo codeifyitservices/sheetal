@@ -184,7 +184,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
             onClick={handleToggleFilters}
             className={`${fromLookbook ? "invisible" : "flex"} items-center gap-2 text-md font-[family-name:var(--font-montserrat)] font-normal tracking-wider hover:text-[#bd9951] transition-colors cursor-pointer shrink-0`}
           >
-            <Image src="/assets/icons/filter.svg" alt="Filter" width={20} height={20} />
+            <Image src="/assets/icons/filter.svg" alt="Filter" width={20} height={20} unoptimized />
             Filters
           </button>
 
@@ -200,6 +200,7 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
                 width={20}
                 height={20}
                 className="w-6 h-6"
+                unoptimized
               />
               Sort By
               <ChevronDown className="w-6 h-6" />
@@ -249,13 +250,13 @@ const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
               onClick={() => handleSetViewMode("grid")}
               className={`transition-opacity cursor-pointer ${viewMode === "grid" ? "opacity-100" : "opacity-40 hover:opacity-100"}`}
             >
-              <Image src="/assets/icons/grid.svg" alt="Grid" width={18} height={18} />
+              <Image src="/assets/icons/grid.svg" alt="Grid" width={18} height={18} unoptimized />
             </button>
             <button
               onClick={() => handleSetViewMode("list")}
               className={`transition-opacity cursor-pointer ${viewMode === "list" ? "opacity-100" : "opacity-40 hover:opacity-100"}`}
             >
-              <Image src="/assets/icons/list.svg" alt="List" width={18} height={18} />
+              <Image src="/assets/icons/list.svg" alt="List" width={18} height={18} unoptimized />
             </button>
           </div>
         </div>

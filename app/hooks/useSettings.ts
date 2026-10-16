@@ -5,9 +5,12 @@ import { getSettings } from "../services/settingsService";
 let cachedSettings: any = null;
 let promise: Promise<any> | null = null;
 
-export const useSettings = () => {
-  const [settings, setSettings] = useState<any>(cachedSettings);
-  const [loading, setLoading] = useState(!cachedSettings);
+export const useSettings = (initialSettings?: any) => {
+  if (initialSettings && !cachedSettings) {
+    cachedSettings = initialSettings;
+  }
+  const [settings, setSettings] = useState<any>(initialSettings || cachedSettings);
+  const [loading, setLoading] = useState(!initialSettings && !cachedSettings);
 
   useEffect(() => {
     if (cachedSettings) {
