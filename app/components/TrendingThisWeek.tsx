@@ -204,35 +204,7 @@ const TrendingThisWeek = ({
   const isAvailableProduct = (p: Product): boolean => {
     if (!p || !p._id || !p.slug || !p.name) return false;
     if (p.status && p.status !== "Active") return false;
-
-    const hasVariantSizes = p.variants?.some(
-      (v: any) => Array.isArray(v.sizes) && v.sizes.length > 0,
-    );
-    const hasInStockVariant = p.variants?.some((v: any) =>
-      v.sizes?.some((s: any) => Number(s.stock || 0) > 0),
-    );
-    const isInStock = hasVariantSizes
-      ? Boolean(hasInStockVariant) && (p.stock === undefined || p.stock > 0)
-      : Number(p.stock || 0) > 0;
-
-    if (!isInStock) return false;
-
-    let minPrice = Infinity;
-    p.variants?.forEach((v: any) => {
-      v.sizes?.forEach((s: any) => {
-        const effective =
-          s.discountPrice && s.discountPrice > 0 ? s.discountPrice : s.price;
-        if (effective > 0 && effective < minPrice) {
-          minPrice = effective;
-        }
-      });
-    });
-
-    if (minPrice === Infinity && Number(p.price || 0) > 0) {
-      minPrice = Number(p.price);
-    }
-
-    return minPrice > 0 && minPrice !== Infinity;
+    return true;
   };
 
   const formatProduct = (p: Product): TrendingProduct => {
@@ -287,8 +259,8 @@ const TrendingThisWeek = ({
 
   useEffect(() => {
     const loadTrending = async () => {
-      if (propProducts && propProducts.length > 0) {
-        const available = propProducts.filter(isAvailableProduct);
+      if (content !== undefined) {
+        const available = (propProducts || []).filter(isAvailableProduct);
         setProducts(available.map(formatProduct));
         setLoading(false);
         return;
@@ -310,7 +282,7 @@ const TrendingThisWeek = ({
       }
     };
     loadTrending();
-  }, [propProducts]);
+  }, [content, propProducts]);
 
   if (loading) return null;
   if (products.length === 0) return null;

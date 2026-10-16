@@ -67,6 +67,8 @@ export interface Product {
   description: string;
   materialCare: string;
   isStarred?: boolean;
+  sortOrder?: number;
+  createdAt?: string;
   gstPercent: number;
   price?: number;
   categorySlug?: string;

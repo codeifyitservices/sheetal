@@ -373,6 +373,8 @@ const setViewMode = (mode: "grid" | "list") => {
       soldOut: p.stock <= 0,
       isWishlisted: isProductInWishlist(p._id),
       isStarred: p.isStarred || false,
+      sortOrder: p.sortOrder || 0,
+      createdAt: p.createdAt || "",
     };
   });
 
@@ -391,11 +393,18 @@ const setViewMode = (mode: "grid" | "list") => {
   } else if (sortOption === "discount_asc") {
     filteredProducts.sort((a, b) => a.discountPercent - b.discountPercent);
   } else {
-    // Default sorting (e.g., "newest"): Star priority first
+    // Default sorting (e.g., "newest" / featured): Star priority first, then custom sortOrder, then newest
     filteredProducts.sort((a, b) => {
       if (a.isStarred && !b.isStarred) return -1;
       if (!a.isStarred && b.isStarred) return 1;
-      return 0;
+
+      const orderA = a.sortOrder && a.sortOrder > 0 ? a.sortOrder : 999999999;
+      const orderB = b.sortOrder && b.sortOrder > 0 ? b.sortOrder : 999999999;
+      if (orderA !== orderB) return orderA - orderB;
+
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
     });
   }
 
